@@ -18,30 +18,67 @@
       <button class="button ghost" id="logoutBtn" style="display:none">Log ud</button>
     </div>
   </div>
+
   <div class="container">
+    <!-- Login-boks -->
     <div id="login" class="card">
       <h3>Login (medarbejder)</h3>
       <div class="grid">
         <div class="field third"><label>Brugernavn</label><input id="u" class="input" placeholder="Brugernavn"></div>
         <div class="field third"><label>Kode</label><input id="p" class="input" type="password" inputmode="numeric" pattern="[0-9]*" placeholder="Kode"></div>
-        <div class="field third" style="align-self:end"><button id="loginBtn" class="button primary">Log ind</button></div>
+        <div class="field third" style="align-self:end; display:flex; gap:8px; flex-wrap:wrap">
+          <button id="loginBtn" class="button primary">Log ind</button>
+          <!-- DEMO-knap: ingen login, spring direkte til arbejdskort -->
+          <button id="demoBtn" class="button">Prøv demo (ingen login)</button>
+        </div>
       </div>
-      <small class="hint">Koder vises aldrig i klar tekst.</small>
+      <small class="hint">Koder vises aldrig i klar tekst. Brug demo for at teste uden login.</small>
     </div>
 
+    <!-- Form til nyt arbejdskort (vises når der er en session, inkl. demo) -->
     <div id="newcard" style="display:none"></div>
   </div>
 
 <script>
-ensureDefaults(); setHeaderTitle(document.querySelector('#apptitle'));
-const sess=getSession(); const loginBox=document.querySelector('#login'); const newBox=document.querySelector('#newcard'); const logoutBtn=document.querySelector('#logoutBtn');
-if(sess && sess.role==='employee'){ loginBox.style.display='none'; newBox.style.display='block'; logoutBtn.style.display='inline-block'; buildCardForm(newBox); } 
-else { loginBox.style.display='block'; newBox.style.display='none'; }
-logoutBtn.onclick=logout;
-document.querySelector('#loginBtn').onclick=async()=>{ const u=document.querySelector('#u').value.trim(); const p=document.querySelector('#p').value.trim(); const s=await employeeLogin(u,p); if(!s) return alert('Forkert login.'); location.reload(); };
+ensureDefaults();
+setHeaderTitle(document.querySelector('#apptitle'));
+
+const sess   = getSession();
+const loginBox = document.querySelector('#login');
+const newBox   = document.querySelector('#newcard');
+const logoutBtn= document.querySelector('#logoutBtn');
+
+// Hvis der er session (også demo), vis arbejdskortet med det samme
+if(sess && (sess.role==='employee' || sess.demo === true)){
+  loginBox.style.display='none';
+  newBox.style.display='block';
+  logoutBtn.style.display='inline-block';
+  buildCardForm(newBox);
+}else{
+  loginBox.style.display='block';
+  newBox.style.display='none';
+}
+
+logoutBtn.onclick = logout;
+
+// Normal login
+document.querySelector('#loginBtn').onclick = async ()=>{
+  const u = document.querySelector('#u').value.trim();
+  const p = document.querySelector('#p').value.trim();
+  const s = await employeeLogin(u,p);
+  if(!s) return alert('Forkert login.');
+  location.reload();
+};
+
+// DEMO-login: ingen kode – opret demo-session og vis formular
+document.querySelector('#demoBtn').onclick = ()=>{
+  startDemoSession();  // defineret i /api/_util.js (se næste fil)
+  location.reload();
+};
 </script>
 </body>
 </html>
+
 
 
 
