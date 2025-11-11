@@ -3,23 +3,22 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Admin – Bredsgaard</title>
+  <title>Admin – Arbejdskort</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
 <header class="top">
   <div class="brand">
     <img src="img/logo.png" alt="" onerror="this.style.display='none'">
-    <h1>Admin</h1>
+    <h1 id="appTitle">Admin</h1>
   </div>
-  <nav><a href="index.html">Dagseddel</a></nav>
+  <nav><a href="index.html">Arbejdskort</a></nav>
 </header>
 
 <main>
   <!-- ADMIN LOCK -->
   <section id="adminLock" class="card">
     <h2>Admin adgang</h2>
-    <p class="hint">Indtast admin-kode for at fortsætte.</p>
     <label>Admin-kode</label>
     <input type="password" id="adminPin" inputmode="numeric" pattern="[0-9]*" placeholder="0705" />
     <div class="actions">
@@ -28,47 +27,63 @@
     <p id="adminMsg" class="danger" style="display:none;margin-top:8px"></p>
   </section>
 
-  <!-- ADMIN PANEL -->
+  <!-- INDSTILLINGER -->
   <section id="panel" class="card" style="display:none">
     <h2>Indstillinger</h2>
+
+    <label>App-navn (vises i toppen)</label>
+    <input id="appName" placeholder="Fx Bredsgaard Arbejdskort" />
+
     <div class="grid-2">
       <div>
         <label>Modtager-e-mails (komma-separeret)</label>
-        <input type="text" id="emails" placeholder="vaerksted@..., oekonomi@..." />
+        <input id="emails" placeholder="vaerksted@..., oekonomi@..." />
       </div>
       <div>
         <label>Emne-prefix</label>
-        <input type="text" id="subjectPrefix" placeholder="Dagseddel" />
+        <input id="subjectPrefix" placeholder="Arbejdskort" />
       </div>
     </div>
 
     <label>Mail-footer (brug {dato} og {medarbejder})</label>
     <textarea id="footer" rows="2">Ref.: {dato} – {medarbejder}</textarea>
 
-    <div class="grid-2" style="margin-top:12px">
+    <div class="grid-2">
       <div>
-        <label>Admin-kode</label>
-        <input type="password" id="adminCode" placeholder="0705" />
+        <label>Auto-oprydning (dage for UDKAST)</label>
+        <input id="retentionDays" type="number" min="1" value="7" />
       </div>
-      <div class="actions" style="align-items:end">
-        <button class="primary" id="saveCfg">Gem indstillinger</button>
-        <button id="resetCfg">Nulstil</button>
+      <div>
+        <label>Påkrævede felter (før afsendelse)</label>
+        <div class="card" style="padding:10px">
+          <label><input type="checkbox" class="req" value="date"> Dato</label>
+          <label><input type="checkbox" class="req" value="name"> Medarbejdernavn</label>
+          <label><input type="checkbox" class="req" value="customer"> Kunde</label>
+          <label><input type="checkbox" class="req" value="location"> Lokation</label>
+          <label><input type="checkbox" class="req" value="machine"> Maskine/Model</label>
+          <label><input type="checkbox" class="req" value="work"> Arbejdets art</label>
+          <label><input type="checkbox" class="req" value="fault"> Fejlbeskrivelse</label>
+          <label><input type="checkbox" class="req" value="done"> Udført arbejde</label>
+          <label><input type="checkbox" class="req" value="hours"> Normal timer</label>
+          <label><input type="checkbox" class="req" value="mhours"> Maskintimer</label>
+          <label><input type="checkbox" class="req" value="km"> Kørte km</label>
+          <label><input type="checkbox" class="req" value="note"> Noter</label>
+        </div>
       </div>
+    </div>
+
+    <div class="actions">
+      <button class="primary" id="saveCfg">Gem indstillinger</button>
+      <button id="resetCfg">Nulstil</button>
     </div>
   </section>
 
+  <!-- BRUGERE -->
   <section id="usersCard" class="card" style="display:none">
     <h2>Brugere & koder</h2>
-
     <div class="grid-3">
-      <div>
-        <label>Navn</label>
-        <input id="uName" placeholder="Fx Per Bonde" />
-      </div>
-      <div>
-        <label>Kode (PIN)</label>
-        <input id="uCode" placeholder="1234" inputmode="numeric" pattern="[0-9]*" />
-      </div>
+      <div><label>Navn</label><input id="uName" placeholder="Fx Per Bonde" /></div>
+      <div><label>Kode (PIN)</label><input id="uCode" placeholder="1234" inputmode="numeric" pattern="[0-9]*" /></div>
       <div class="actions" style="align-items:end">
         <button class="primary" id="addUser">Tilføj / Opdatér</button>
         <button id="clearInputs">Ryd</button>
@@ -88,113 +103,90 @@
 
 <script>
 (() => {
-  const LS_ADMIN = 'ds_admin_v1';
+  const ADMIN_CODE = '0705'; // fastlåst
+  const LS_ADMIN = 'ds_admin_v2';
   const LS_USERS = 'ds_users_v1';
 
   const $ = s => document.querySelector(s);
-  const byId = id => document.getElementById(id);
 
-  function getCfg(){ try{return JSON.parse(localStorage.getItem(LS_ADMIN)||'{}')}catch{return{}} }
-  function setCfg(v){ localStorage.setItem(LS_ADMIN, JSON.stringify(v)); }
-  function getUsers(){ try{return JSON.parse(localStorage.getItem(LS_USERS)||'[]')}catch{return[]} }
-  function setUsers(v){ localStorage.setItem(LS_USERS, JSON.stringify(v)); }
+  const getCfg = () => JSON.parse(localStorage.getItem(LS_ADMIN) || '{}');
+  const setCfg = v => localStorage.setItem(LS_ADMIN, JSON.stringify(v));
+  const getUsers = () => JSON.parse(localStorage.getItem(LS_USERS) || '[]');
+  const setUsers = v => localStorage.setItem(LS_USERS, JSON.stringify(v));
 
-  // --- admin unlock ---
-  function tryAdminUnlock(){
-    const input = byId('adminPin').value.trim();
-    const cfg = getCfg();
-    const code = (cfg.adminCode || '0705').trim();
-    if (input === code) {
-      byId('adminLock').style.display = 'none';
-      byId('panel').style.display = '';
-      byId('usersCard').style.display = '';
-      loadCfg();
-      renderUsers();
+  // unlock
+  $('#adminUnlock').addEventListener('click', () => {
+    if (($('#adminPin').value || '').trim() === ADMIN_CODE) {
+      $('#adminLock').style.display = 'none';
+      $('#panel').style.display = '';
+      $('#usersCard').style.display = '';
+      load();
     } else {
-      byId('adminMsg').textContent = 'Forkert kode.';
-      byId('adminMsg').style.display = 'block';
+      $('#adminMsg').textContent = 'Forkert kode.'; $('#adminMsg').style.display='block';
     }
+  });
+
+  function load(){
+    const c = getCfg();
+    $('#appTitle').textContent = c.appName || 'Admin';
+    $('#appName').value = c.appName || 'Bredsgaard Arbejdskort';
+    $('#emails').value = c.emails || 'vaerksted@bredsgaard.dk';
+    $('#subjectPrefix').value = c.subjectPrefix || 'Arbejdskort';
+    $('#footer').value = c.footer || 'Ref.: {dato} – {medarbejder}';
+    $('#retentionDays').value = c.retentionDays || 7;
+    document.querySelectorAll('.req').forEach(cb=>{
+      cb.checked = (c.requiredFields||[]).includes(cb.value);
+    });
+    renderUsers();
   }
 
-  // --- cfg load/save ---
-  function loadCfg(){
-    const c = getCfg();
-    byId('emails').value = c.emails || 'vaerksted@bredsgaard.dk';
-    byId('subjectPrefix').value = c.subjectPrefix || 'Dagseddel';
-    byId('footer').value = c.footer || 'Ref.: {dato} – {medarbejder}';
-    byId('adminCode').value = c.adminCode || '0705';
-  }
-  function saveCfg(){
+  $('#saveCfg').addEventListener('click', () => {
+    const required = [...document.querySelectorAll('.req')].filter(cb=>cb.checked).map(cb=>cb.value);
     setCfg({
-      emails: byId('emails').value.trim(),
-      subjectPrefix: byId('subjectPrefix').value.trim() || 'Dagseddel',
-      footer: byId('footer').value,
-      adminCode: byId('adminCode').value.trim() || '0705'
+      appName: $('#appName').value.trim(),
+      emails: $('#emails').value.trim(),
+      subjectPrefix: $('#subjectPrefix').value.trim() || 'Arbejdskort',
+      footer: $('#footer').value,
+      retentionDays: Math.max(1, parseInt($('#retentionDays').value || '7', 10)),
+      requiredFields: required
     });
     alert('Indstillinger gemt.');
-  }
+  });
 
-  // --- users ---
+  $('#resetCfg').addEventListener('click', ()=>{ localStorage.removeItem(LS_ADMIN); load(); });
+
   function renderUsers(){
-    const tbody = byId('usersTable'); tbody.innerHTML = '';
-    getUsers().forEach((u, idx) => {
+    const tbody = $('#usersTable'); tbody.innerHTML='';
+    getUsers().forEach((u,i)=>{
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td>${u.name}</td>
-        <td>${u.code}</td>
-        <td>${u.active!==false ? 'Ja' : 'Nej'}</td>
+        <td>${u.name}</td><td>${u.code}</td><td>${u.active!==false?'Ja':'Nej'}</td>
         <td class="actions-inline">
-          <button data-idx="${idx}" class="edit">Redigér</button>
-          <button data-idx="${idx}" class="toggle">${u.active!==false?'Deaktivér':'Aktivér'}</button>
-          <button data-idx="${idx}" class="del danger">Slet</button>
+          <button data-i="${i}" class="edit">Redigér</button>
+          <button data-i="${i}" class="toggle">${u.active!==false?'Deaktivér':'Aktivér'}</button>
+          <button data-i="${i}" class="del danger">Slet</button>
         </td>`;
       tbody.appendChild(tr);
     });
-
-    // handlers
-    tbody.querySelectorAll('.edit').forEach(btn=>{
-      btn.addEventListener('click', e=>{
-        const i = +e.target.dataset.idx, u = getUsers()[i];
-        byId('uName').value = u.name; byId('uCode').value = u.code;
-      });
+    tbody.querySelectorAll('.edit').forEach(b=>b.onclick=e=>{
+      const u=getUsers()[+e.target.dataset.i]; $('#uName').value=u.name; $('#uCode').value=u.code;
     });
-    tbody.querySelectorAll('.toggle').forEach(btn=>{
-      btn.addEventListener('click', e=>{
-        const i = +e.target.dataset.idx; const arr = getUsers();
-        arr[i].active = !(arr[i].active!==false);
-        setUsers(arr); renderUsers();
-      });
+    tbody.querySelectorAll('.toggle').forEach(b=>b.onclick=e=>{
+      const i=+e.target.dataset.i; const arr=getUsers(); arr[i].active=!(arr[i].active!==false); setUsers(arr); renderUsers();
     });
-    tbody.querySelectorAll('.del').forEach(btn=>{
-      btn.addEventListener('click', e=>{
-        const i = +e.target.dataset.idx; const arr = getUsers();
-        if (confirm(`Slet ${arr[i].name}?`)) { arr.splice(i,1); setUsers(arr); renderUsers(); }
-      });
+    tbody.querySelectorAll('.del').forEach(b=>b.onclick=e=>{
+      const i=+e.target.dataset.i; const arr=getUsers(); if(confirm('Slet bruger?')){arr.splice(i,1); setUsers(arr); renderUsers();}
     });
   }
 
-  function addOrUpdateUser(){
-    const name = byId('uName').value.trim();
-    const code = byId('uCode').value.trim();
-    if (!name || !code) { alert('Udfyld både navn og kode.'); return; }
-
-    const arr = getUsers();
-    const i = arr.findIndex(u => u.name.toLowerCase() === name.toLowerCase());
-    const payload = { name, code, active: true };
-    if (i>=0) arr[i] = payload; else arr.push(payload);
-    setUsers(arr); renderUsers();
-    alert('Bruger gemt.');
-  }
-
-  // events
-  byId('adminUnlock').addEventListener('click', tryAdminUnlock);
-  byId('saveCfg').addEventListener('click', saveCfg);
-  byId('resetCfg').addEventListener('click', ()=>{ localStorage.removeItem(LS_ADMIN); loadCfg(); });
-  byId('addUser').addEventListener('click', addOrUpdateUser);
-  byId('clearInputs').addEventListener('click', ()=>{ byId('uName').value=''; byId('uCode').value=''; });
-
-  // autofocus
-  byId('adminPin').focus();
+  $('#addUser').addEventListener('click', ()=>{
+    const name=$('#uName').value.trim(), code=$('#uCode').value.trim();
+    if(!name||!code) return alert('Udfyld navn og kode');
+    const arr=getUsers(); const idx=arr.findIndex(u=>u.name.toLowerCase()===name.toLowerCase());
+    const payload={name, code, active:true}; if(idx>=0) arr[idx]=payload; else arr.push(payload);
+    setUsers(arr); renderUsers(); alert('Bruger gemt.');
+  });
+  $('#clearInputs').addEventListener('click', ()=>{ $('#uName').value=''; $('#uCode').value=''; });
 })();
 </script>
 </body>
