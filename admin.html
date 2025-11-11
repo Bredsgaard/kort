@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin – Bredsgaard</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <img src="img/logo.png" alt="" onerror="this.style.display='none'">
+    <h1>Admin</h1>
+  </div>
+  <nav><a href="index.html">Dagseddel</a></nav>
+</header>
+
+<main>
+  <section class="card">
+    <h2>Indstillinger (gemmes i denne enheds browser)</h2>
+
+    <label>Modtager-e-mails (komma-separeret)</label>
+    <input type="text" id="emails" placeholder="vaerksted@..., oekonomi@..." />
+
+    <label>Emne-prefix</label>
+    <input type="text" id="subjectPrefix" placeholder="Dagseddel" />
+
+    <label>Mail-footer (brug {dato} og {medarbejder})</label>
+    <textarea id="footer" rows="3">Ref.: {dato} – {medarbejder}</textarea>
+
+    <div class="actions">
+      <button class="primary" id="saveAdmin">Gem indstillinger</button>
+      <button id="resetAdmin">Nulstil</button>
+    </div>
+
+    <p class="hint">Dette er en ren klient-prototype uden rigtigt login.  
+    Når du vil have brugere/roller og central lagring, flytter vi til backend.</p>
+  </section>
+</main>
+
+<footer>© Bredsgaard A/S</footer>
+
+<script>
+(() => {
+  const LS_ADMIN = 'ds_admin_v1';
+  const $ = s => document.querySelector(s);
+  function getAdmin(){ try{return JSON.parse(localStorage.getItem(LS_ADMIN)||'{}')}catch{return{}} }
+  function setAdmin(v){ localStorage.setItem(LS_ADMIN, JSON.stringify(v)); }
+
+  // load
+  const a = getAdmin();
+  $('#emails').value = a.emails || 'vaerksted@bredsgaard.dk';
+  $('#subjectPrefix').value = a.subjectPrefix || 'Dagseddel';
+  $('#footer').value = a.footer || 'Ref.: {dato} – {medarbejder}';
+
+  // save & reset
+  $('#saveAdmin').addEventListener('click', () => {
+    setAdmin({
+      emails: $('#emails').value.trim(),
+      subjectPrefix: $('#subjectPrefix').value.trim(),
+      footer: $('#footer').value
+    });
+    alert('Indstillinger gemt (lokalt).');
+  });
+  $('#resetAdmin').addEventListener('click', () => {
+    localStorage.removeItem(LS_ADMIN);
+    location.reload();
+  });
+})();
+</script>
+</body>
+</html>
