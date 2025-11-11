@@ -66,6 +66,7 @@ main{padding:28px 0 56px}
   margin:0 0 18px;
   font-size:26px; line-height:1.2; letter-spacing:.2px;
 }
+.subtle{color:var(--muted); font-size:14px}
 
 /* ========== Formularer ========== */
 .form-grid{
@@ -73,13 +74,14 @@ main{padding:28px 0 56px}
   grid-template-columns: repeat(12, 1fr);
 }
 .field{grid-column: span 6}
+.field-12{grid-column: span 12}
 .actions{grid-column: span 12; display:flex; gap:12px; align-items:center; margin-top:4px}
 
 label{
   display:block; font-size:14px; color:var(--muted);
   margin:0 0 6px;
 }
-.input, input[type="text"], input[type="password"], input[type="number"], textarea, select{
+.input, input[type="text"], input[type="password"], input[type="number"], input[type="date"], textarea, select{
   width:100%; appearance:none;
   background:#fff; color:var(--text);
   border:1px solid var(--border); border-radius:12px;
@@ -89,6 +91,14 @@ label{
 input:focus, textarea:focus, select:focus{
   outline:none; border-color: var(--brand-500);
   box-shadow: 0 0 0 3px var(--ring);
+}
+textarea{min-height:120px; resize:vertical}
+
+/* inline info */
+.info{
+  display:inline-flex; align-items:center; gap:8px;
+  padding:10px 12px; border-radius:10px; font-size:14px;
+  background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0;
 }
 
 /* ========== Knapper ========== */
@@ -112,6 +122,15 @@ input:focus, textarea:focus, select:focus{
 }
 .btn:disabled{opacity:.55; cursor:not-allowed}
 
+/* ========== Tabel / liste ========== */
+.table{
+  width:100%; border-collapse:separate; border-spacing:0; font-size:14px;
+  border:1px solid var(--border); border-radius:14px; overflow:hidden;
+}
+.table th, .table td{padding:12px 14px; text-align:left}
+.table thead th{background:#f8fafc; color:#0f172a; font-weight:700}
+.table tbody tr + tr td{border-top:1px solid var(--border)}
+
 /* ========== Footer ========== */
 .footer{
   padding:28px 0; text-align:center; color:var(--muted);
@@ -120,9 +139,10 @@ input:focus, textarea:focus, select:focus{
 /* ========== Responsiv ========== */
 @media (max-width: 780px){
   .form-grid{grid-template-columns: 1fr}
-  .field, .actions{grid-column: auto}
+  .field, .actions, .field-12{grid-column: auto}
   .topbar .bar{height:auto; padding:12px 0; gap:10px; align-items:flex-start}
   .nav{flex-wrap:wrap; gap:10px}
 }
+
 
 
