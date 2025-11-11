@@ -19,55 +19,31 @@
 </header>
 
 <main>
-  <!-- Admin login -->
   <section id="adminLock" class="card">
     <h2>Admin adgang</h2>
     <form id="adminForm" autocomplete="off">
       <div class="grid-2">
-        <div>
-          <label>Admin-brugernavn</label>
-          <input id="adminUser" placeholder="Bonde" autocomplete="off" autocapitalize="off" />
-        </div>
-        <div>
-          <label>Admin-kode</label>
-          <input type="password" id="adminPin" inputmode="numeric" pattern="[0-9]*" placeholder="••••" autocomplete="new-password" />
-        </div>
+        <div><label>Admin-brugernavn</label><input id="adminUser" placeholder="Bonde" /></div>
+        <div><label>Admin-kode</label><input type="password" id="adminPin" inputmode="numeric" pattern="[0-9]*" placeholder="••••" /></div>
       </div>
-      <div class="actions">
-        <button class="primary" id="adminUnlock" type="submit">Lås op</button>
-      </div>
+      <div class="actions"><button class="primary" id="adminUnlock" type="submit">Lås op</button></div>
       <p id="adminMsg" class="danger" style="display:none;margin-top:8px"></p>
     </form>
   </section>
 
-  <!-- Indstillinger -->
   <section id="panel" class="card" style="display:none">
     <h2>Indstillinger</h2>
-
-    <label>App-navn (vises i toppen)</label>
-    <input id="appName" placeholder="Fx Bredsgaard Arbejdskort" autocomplete="off" />
-
+    <label>App-navn</label><input id="appName" placeholder="Fx Bredsgaard Arbejdskort" />
     <div class="grid-2">
-      <div>
-        <label>Standard modtager-e-mails (komma-separeret)</label>
-        <input id="emails" placeholder="pb@bredsgaard.dk, vaerksted@..." autocomplete="off" />
-      </div>
-      <div>
-        <label>Emne-prefix</label>
-        <input id="subjectPrefix" placeholder="Arbejdskort" autocomplete="off" />
-      </div>
+      <div><label>Modtager-e-mails (komma)</label><input id="emails" placeholder="pb@bredsgaard.dk" /></div>
+      <div><label>Emne-prefix</label><input id="subjectPrefix" placeholder="Arbejdskort" /></div>
     </div>
-
-    <label>Mail-footer (brug {dato} og {medarbejder})</label>
-    <textarea id="footer" rows="2">Ref.: {dato} – {medarbejder}</textarea>
+    <label>Mail-footer (brug {dato} og {medarbejder})</label><textarea id="footer" rows="2">Ref.: {dato} – {medarbejder}</textarea>
 
     <div class="grid-2">
+      <div><label>Auto-oprydning (udkast, dage)</label><input id="retentionDays" type="number" min="1" value="7" /></div>
       <div>
-        <label>Auto-oprydning (dage for UDKAST)</label>
-        <input id="retentionDays" type="number" min="1" value="7" />
-      </div>
-      <div>
-        <label>Påkrævede felter (før afsendelse)</label>
+        <label>Påkrævede felter</label>
         <div class="card" style="padding:10px">
           <label><input type="checkbox" class="req" value="date"> Dato</label>
           <label><input type="checkbox" class="req" value="name"> Medarbejdernavn</label>
@@ -82,9 +58,9 @@
           <label><input type="checkbox" class="req" value="overtime"> Overtimer</label>
           <label><input type="checkbox" class="req" value="mhours"> Maskintimer</label>
           <label><input type="checkbox" class="req" value="km"> Kørte km</label>
-          <label><input type="checkbox" class="req" value="welding"> Svejsning (timer)</label>
-          <label><input type="checkbox" class="req" value="electrodes"> Elektroder (stk)</label>
-          <label><input type="checkbox" class="req" value="diesel"> Diesel (liter)</label>
+          <label><input type="checkbox" class="req" value="welding"> Svejsning</label>
+          <label><input type="checkbox" class="req" value="electrodes"> Elektroder</label>
+          <label><input type="checkbox" class="req" value="diesel"> Diesel</label>
           <label><input type="checkbox" class="req" value="note"> Bemærkninger</label>
         </div>
       </div>
@@ -100,10 +76,8 @@
       <button id="consAdd" type="button">Tilføj</button>
     </div>
     <div class="tableWrap" style="margin-top:8px">
-      <table class="table">
-        <thead><tr><th>Navn</th><th>Enhed</th><th>Handling</th></tr></thead>
-        <tbody id="consTable"></tbody>
-      </table>
+      <table class="table"><thead><tr><th>Navn</th><th>Enhed</th><th>Handling</th></tr></thead>
+      <tbody id="consTable"></tbody></table>
     </div>
 
     <div class="actions">
@@ -112,17 +86,13 @@
     </div>
   </section>
 
-  <!-- Brugere -->
   <section id="usersCard" class="card" style="display:none">
     <h2>Brugere</h2>
     <form id="userForm" autocomplete="off">
       <div class="grid-3">
-        <div><label>Navn</label><input id="uName" placeholder="Fx Per Bonde" autocomplete="off"/></div>
-        <div><label>Brugernavn</label><input id="uUsername" placeholder="fx pbo" autocomplete="off" autocapitalize="off"/></div>
-        <div>
-          <label>Ny kode (valgfri ved redigering)</label>
-          <input type="password" id="uCode" placeholder="••••" inputmode="numeric" pattern="[0-9]*" autocomplete="new-password" />
-        </div>
+        <div><label>Navn</label><input id="uName" placeholder="Fx Per Bonde" /></div>
+        <div><label>Brugernavn</label><input id="uUsername" placeholder="fx pbo" autocapitalize="off" /></div>
+        <div><label>Ny kode (4+ cifre)</label><input type="password" id="uCode" placeholder="••••" inputmode="numeric" pattern="[0-9]*" /></div>
       </div>
       <div class="actions" style="margin-top:10px">
         <button class="primary" id="addUser" type="submit">Tilføj / Opdatér</button>
@@ -137,20 +107,6 @@
         <tbody id="usersTable"></tbody>
       </table>
     </div>
-
-    <h3 style="margin-top:16px">Backup & flytning</h3>
-    <div class="actions">
-      <button id="exportUsers" class="secondary" type="button">Export Brugere+Indstillinger (JSON)</button>
-      <input type="file" id="importUsersFile" accept="application/json" style="display:none">
-      <button id="importUsers" class="secondary" type="button">Import Brugere+Indstillinger</button>
-    </div>
-
-    <div class="actions" style="margin-top:8px">
-      <button id="exportCards" class="secondary" type="button">Export Arbejdskort (JSON)</button>
-      <input type="file" id="importCardsFile" accept="application/json" style="display:none">
-      <button id="importCards" class="secondary" type="button">Import Arbejdskort</button>
-    </div>
-    <p class="hint">Incognito har sit eget lager – brug export/import for at flytte data.</p>
   </section>
 </main>
 
@@ -158,199 +114,138 @@
 
 <script>
 (() => {
-  const ADMIN_CODE = '0705';
-  const ADMIN_USERNAME = 'Bonde';
-
-  const LS_ADMIN = 'ak_admin_v4';  // bump
-  const LS_USERS = 'ak_users_v3';
-  const LS_CARDS = 'ak_cards_v3';
-
+  const ADMIN_HEADERS = { 'x-admin-user':'Bonde', 'x-admin-pin':'0705', 'Content-Type':'application/json' };
   const $ = s => document.querySelector(s);
-  const getCfg   = () => JSON.parse(localStorage.getItem(LS_ADMIN) || '{}');
-  const setCfg   = v  => localStorage.setItem(LS_ADMIN, JSON.stringify(v));
-  const getUsers = () => JSON.parse(localStorage.getItem(LS_USERS) || '[]');
-  const setUsers = v  => localStorage.setItem(LS_USERS, JSON.stringify(v));
-  const getCards = () => JSON.parse(localStorage.getItem(LS_CARDS) || '[]');
-  const setCards = v  => localStorage.setItem(LS_CARDS, JSON.stringify(v));
 
-  function ensureAdminUser(){
-    const arr = getUsers();
-    const i = arr.findIndex(u => (u.username||'').toLowerCase() === ADMIN_USERNAME.toLowerCase());
-    if (i < 0) arr.push({ name: 'Admin', username: ADMIN_USERNAME, code: ADMIN_CODE, active: true, system: true });
-    else { arr[i].active = true; arr[i].system = true; }
-    setUsers(arr);
-  }
-  ensureAdminUser();
+  // ---- API helpers ----
+  const loadSettings = async () => (await (await fetch('/api/settings')).json());
+  const saveSettings = async (cfg) => (await (await fetch('/api/settings', {method:'POST', headers: ADMIN_HEADERS, body: JSON.stringify(cfg)})).json());
+  const listUsers  = async () => (await (await fetch('/api/users')).json());
+  const upsertUser = async (u)  => (await (await fetch('/api/users',{method:'POST', headers: ADMIN_HEADERS, body: JSON.stringify(u)})).json());
+  const delUser    = async (username)=> (await (await fetch('/api/users?username='+encodeURIComponent(username),{method:'DELETE', headers: ADMIN_HEADERS})).json());
+  const toggleUser = async (username,active)=> (await (await fetch('/api/users',{method:'PATCH', headers: ADMIN_HEADERS, body: JSON.stringify({username,active})})).json());
 
-  // Login
-  $('#adminForm').addEventListener('submit', (e)=>{
+  // ---- Admin login (klient-side gate) ----
+  document.getElementById('adminForm').addEventListener('submit', async (e)=>{
     e.preventDefault();
-    const un = ($('#adminUser').value||'').trim().toLowerCase();
-    const pin = ($('#adminPin').value||'').trim();
-    if (un === ADMIN_USERNAME.toLowerCase() && pin === ADMIN_CODE) {
-      $('#adminLock').style.display='none';
-      $('#panel').style.display='';
-      $('#usersCard').style.display='';
-      loadCfg(); renderUsers(); renderCons(getCfg().consumables||[]);
-    } else { $('#adminMsg').textContent='Forkert admin-brugernavn eller kode.'; $('#adminMsg').style.display='block'; }
+    const un = (document.getElementById('adminUser').value||'').trim();
+    const pin= (document.getElementById('adminPin').value||'').trim();
+    if (un==='Bonde' && pin==='0705'){
+      document.getElementById('adminLock').style.display='none';
+      document.getElementById('panel').style.display='';
+      document.getElementById('usersCard').style.display='';
+      await initSettings();
+      await renderUsers();
+    } else {
+      document.getElementById('adminMsg').textContent='Forkert admin-brugernavn eller kode.';
+      document.getElementById('adminMsg').style.display='block';
+    }
   });
 
-  // Indstillinger load/save
-  function loadCfg(){
-    const c=getCfg();
-    $('#appTitle').textContent = c.appName || 'Admin';
-    $('#appName').value = c.appName || 'Bredsgaard Arbejdskort';
-    $('#emails').value = c.emails || 'pb@bredsgaard.dk';
-    $('#subjectPrefix').value = c.subjectPrefix || 'Arbejdskort';
-    $('#footer').value = c.footer || 'Ref.: {dato} – {medarbejder}';
-    $('#retentionDays').value = c.retentionDays || 7;
-    $('#workPresets').value = (c.workPresets||[]).join('\n');
-    document.querySelectorAll('.req').forEach(cb => cb.checked = (c.requiredFields||[]).includes(cb.value));
+  // ---- Indstillinger ----
+  let SETTINGS = {};
+  async function initSettings(){
+    SETTINGS = await loadSettings();
+    document.getElementById('appTitle').textContent = SETTINGS.appName || 'Admin';
+    document.getElementById('appName').value = SETTINGS.appName || 'Bredsgaard Arbejdskort';
+    document.getElementById('emails').value = SETTINGS.emails || 'pb@bredsgaard.dk';
+    document.getElementById('subjectPrefix').value = SETTINGS.subjectPrefix || 'Arbejdskort';
+    document.getElementById('footer').value = SETTINGS.footer || 'Ref.: {dato} – {medarbejder}';
+    document.getElementById('retentionDays').value = SETTINGS.retentionDays || 7;
+    document.getElementById('workPresets').value = (SETTINGS.workPresets||[]).join('\n');
+    document.querySelectorAll('.req').forEach(cb => cb.checked = (SETTINGS.requiredFields||[]).includes(cb.value));
+    renderCons(SETTINGS.consumables||[]);
   }
 
-  $('#saveCfg').onclick = () => {
-    const c = getCfg();
-    const required = [...document.querySelectorAll('.req')].filter(cb=>cb.checked).map(cb=>cb.value);
-    const presets = ($('#workPresets').value||'').split('\n').map(s=>s.trim()).filter(Boolean);
-    setCfg({
-      ...c,
-      appName: $('#appName').value.trim(),
-      emails: $('#emails').value.trim(),
-      subjectPrefix: ($('#subjectPrefix').value.trim() || 'Arbejdskort'),
-      footer: $('#footer').value,
-      retentionDays: Math.max(1, parseInt($('#retentionDays').value||'7',10)),
-      requiredFields: required,
-      workPresets: presets,
-      consumables: c.consumables || []
-    });
-    alert('Indstillinger gemt.');
-  };
-
-  $('#resetCfg').onclick = () => { localStorage.removeItem(LS_ADMIN); loadCfg(); };
-
-  // Forbrugsliste
   function renderCons(arr){
-    const tb = $('#consTable'); tb.innerHTML='';
+    const tb=document.getElementById('consTable'); tb.innerHTML='';
     arr.forEach((x,i)=>{
       const tr=document.createElement('tr');
-      tr.innerHTML=`<td>${x.name}</td><td>${x.unit}</td>
-      <td><button data-i="${i}" class="del danger">Slet</button></td>`;
+      tr.innerHTML = `<td>${x.name}</td><td>${x.unit||''}</td><td><button data-i="${i}" class="del danger">Slet</button></td>`;
       tb.appendChild(tr);
     });
-    tb.querySelectorAll('.del').forEach(b=>b.onclick=e=>{
-      const i=+e.target.dataset.i; const c=getCfg(); (c.consumables||[]).splice(i,1); setCfg(c); renderCons(c.consumables||[]);
+    tb.querySelectorAll('.del').forEach(b=>b.onclick=async e=>{
+      const i=+e.target.dataset.i; SETTINGS.consumables.splice(i,1); await saveSettings(SETTINGS); renderCons(SETTINGS.consumables);
     });
   }
 
-  $('#consAdd').onclick=()=>{
-    const name=($('#consName').value||'').trim(), unit=($('#consUnit').value||'').trim();
+  document.getElementById('consAdd').onclick = async ()=>{
+    const name=(document.getElementById('consName').value||'').trim();
+    const unit=(document.getElementById('consUnit').value||'').trim();
     if(!name) return;
-    const c=getCfg(); c.consumables = c.consumables||[];
-    c.consumables.push({id:crypto.randomUUID?crypto.randomUUID():Date.now().toString(36), name, unit});
-    setCfg(c); renderCons(c.consumables); $('#consName').value=''; $('#consUnit').value='';
+    SETTINGS.consumables = SETTINGS.consumables||[];
+    SETTINGS.consumables.push({ id: (crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)), name, unit });
+    await saveSettings(SETTINGS);
+    document.getElementById('consName').value=''; document.getElementById('consUnit').value='';
+    renderCons(SETTINGS.consumables);
   };
 
-  // Brugere
-  function renderUsers(){
-    const tbody = $('#usersTable'); tbody.innerHTML='';
-    getUsers().forEach((u,i)=>{
-      const isAdmin = (u.username||'').toLowerCase() === ADMIN_USERNAME.toLowerCase();
+  document.getElementById('saveCfg').onclick = async ()=>{
+    const required = [...document.querySelectorAll('.req')].filter(cb=>cb.checked).map(cb=>cb.value);
+    SETTINGS = {
+      ...SETTINGS,
+      appName: document.getElementById('appName').value.trim(),
+      emails: document.getElementById('emails').value.trim(),
+      subjectPrefix: (document.getElementById('subjectPrefix').value.trim() || 'Arbejdskort'),
+      footer: document.getElementById('footer').value,
+      retentionDays: Math.max(1, parseInt(document.getElementById('retentionDays').value||'7',10)),
+      requiredFields: required,
+      workPresets: (document.getElementById('workPresets').value||'').split('\n').map(s=>s.trim()).filter(Boolean),
+      consumables: SETTINGS.consumables||[]
+    };
+    await saveSettings(SETTINGS);
+    alert('Indstillinger gemt på serveren.');
+  };
+
+  document.getElementById('resetCfg').onclick = async ()=>{
+    SETTINGS = {}; await saveSettings(SETTINGS); await initSettings();
+  };
+
+  // ---- Brugere ----
+  async function renderUsers(){
+    const users = await listUsers();
+    const tbody = document.getElementById('usersTable'); tbody.innerHTML='';
+    users.forEach(u=>{
       const tr=document.createElement('tr');
-      tr.innerHTML = `
-        <td>${u.name}${isAdmin?' (admin)':''}</td>
-        <td>${u.username}</td>
-        <td>${u.active!==false?'Ja':'Nej'}</td>
+      tr.innerHTML = `<td>${u.name}</td><td>${u.username}</td><td>${u.active!==false?'Ja':'Nej'}</td>
         <td class="actions-inline">
-          <button data-i="${i}" class="edit">Redigér</button>
-          ${isAdmin ? '' : `<button data-i="${i}" class="toggle">${u.active!==false?'Deaktivér':'Aktivér'}</button>
-          <button data-i="${i}" class="del danger">Slet</button>`}
+          <button class="edit" data-u="${u.username}">Redigér</button>
+          ${u.username.toLowerCase()==='bonde' ? '' : `
+          <button class="toggle" data-u="${u.username}" data-a="${u.active!==false?'0':'1'}">${u.active!==false?'Deaktivér':'Aktivér'}</button>
+          <button class="del danger" data-u="${u.username}">Slet</button>`}
         </td>`;
       tbody.appendChild(tr);
     });
 
     tbody.querySelectorAll('.edit').forEach(b=>b.onclick=e=>{
-      const u=getUsers()[+e.target.dataset.i];
-      $('#uName').value=u.name||''; $('#uUsername').value=u.username||''; $('#uCode').value='';
+      const u = users.find(x=>x.username===e.target.dataset.u);
+      document.getElementById('uName').value=u.name; document.getElementById('uUsername').value=u.username; document.getElementById('uCode').value='';
     });
-
-    tbody.querySelectorAll('.toggle').forEach(b=>b.onclick=e=>{
-      const i=+e.target.dataset.i; const arr=getUsers();
-      if ((arr[i].username||'').toLowerCase() === ADMIN_USERNAME.toLowerCase()) return;
-      arr[i].active=!(arr[i].active!==false); setUsers(arr); renderUsers();
+    tbody.querySelectorAll('.toggle').forEach(b=>b.onclick=async e=>{
+      const un=e.target.dataset.u, a=e.target.dataset.a==='1'; await toggleUser(un,a); await renderUsers();
     });
-
-    tbody.querySelectorAll('.del').forEach(b=>b.onclick=e=>{
-      const i=+e.target.dataset.i; const arr=getUsers();
-      if ((arr[i].username||'').toLowerCase() === ADMIN_USERNAME.toLowerCase()) return;
-      if (confirm('Slet bruger?')){ arr.splice(i,1); setUsers(arr); renderUsers(); }
+    tbody.querySelectorAll('.del').forEach(b=>b.onclick=async e=>{
+      if (!confirm('Slet bruger?')) return; await delUser(e.target.dataset.u); await renderUsers();
     });
   }
 
-  function normalizeUsername(s){ return s.replace(/\s+/g,'').toLowerCase(); }
-
-  $('#userForm').addEventListener('submit', (e)=>{
+  document.getElementById('userForm').addEventListener('submit', async (e)=>{
     e.preventDefault();
-    const name=($('#uName').value||'').trim();
-    const usernameRaw=($('#uUsername').value||'').trim();
-    const username = normalizeUsername(usernameRaw);
-    const newCode=($('#uCode').value||'').trim();
-
-    if(!name || !username){ return msg('Udfyld navn og brugernavn.'); }
-
-    const arr=getUsers();
-    const i=arr.findIndex(u=> normalizeUsername(u.username||'')===username);
-
-    if(i>=0){
-      arr[i].name = name;
-      arr[i].username = username;
-      if (newCode) arr[i].code = newCode;
-      arr[i].active = true;
-    } else {
-      if(!newCode) return msg('Angiv en kode for nye brugere.');
-      arr.push({name, username, code:newCode, active:true});
-    }
-    setUsers(arr); renderUsers();
-    $('#uCode').value=''; $('#uName').value=''; $('#uUsername').value='';
-    msg('Bruger gemt.');
+    const name=(document.getElementById('uName').value||'').trim();
+    const username=(document.getElementById('uUsername').value||'').trim();
+    const code=(document.getElementById('uCode').value||'').trim();
+    function msg(t){ const p=document.getElementById('userMsg'); p.textContent=t; p.style.display='block'; setTimeout(()=>p.style.display='none',2200); }
+    if(!name || !username) return msg('Udfyld både Navn og Brugernavn.');
+    const res = await upsertUser({ name, username, code });
+    if (!res.ok) return msg(res.error==='need_code' ? 'Angiv en kode for ny bruger.' : 'Fejl ved gem.');
+    document.getElementById('uName').value=''; document.getElementById('uUsername').value=''; document.getElementById('uCode').value='';
+    await renderUsers(); msg('Bruger gemt.');
   });
 
-  $('#clearInputs').onclick = ()=>{ $('#uName').value=''; $('#uUsername').value=''; $('#uCode').value=''; };
-  function msg(t){ const p=$('#userMsg'); p.textContent=t; p.style.display='block'; setTimeout(()=>p.style.display='none',2000); }
-
-  // Export/Import
-  function download(filename, obj){
-    const blob = new Blob([JSON.stringify(obj,null,2)], {type:'application/json'});
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click();
-    URL.revokeObjectURL(a.href);
-  }
-  $('#exportUsers').onclick = ()=>download('arbejdskort_users_settings.json', { settings:getCfg(), users:getUsers() });
-  $('#exportCards').onclick = ()=>download('arbejdskort_cards.json', getCards());
-
-  $('#importUsers').onclick = ()=> $('#importUsersFile').click();
-  $('#importUsersFile').addEventListener('change', async (e)=>{
-    const f = e.target.files[0]; if(!f) return;
-    try{
-      const d = JSON.parse(await f.text());
-      if (d.settings) setCfg(d.settings);
-      if (d.users) setUsers(d.users);
-      loadCfg(); renderUsers(); renderCons(getCfg().consumables||[]);
-      alert('Import OK.');
-    } catch { alert('Kunne ikke importere filen.'); }
-    e.target.value='';
-  });
-
-  $('#importCards').onclick = ()=> $('#importCardsFile').click();
-  $('#importCardsFile').addEventListener('change', async (e)=>{
-    const f = e.target.files[0]; if(!f) return;
-    try{
-      const arr = JSON.parse(await f.text());
-      if (Array.isArray(arr)) { setCards(arr); alert('Arbejdskort importeret.'); }
-      else alert('Filen indeholder ikke gyldige kort.');
-    } catch { alert('Kunne ikke importere filen.'); }
-    e.target.value='';
-  });
+  document.getElementById('clearInputs').onclick = ()=>{
+    document.getElementById('uName').value=''; document.getElementById('uUsername').value=''; document.getElementById('uCode').value='';
+  };
 })();
 </script>
 </body>
 </html>
-
