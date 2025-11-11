@@ -12,12 +12,33 @@
     <img src="img/logo.png" alt="" onerror="this.style.display='none'">
     <h1>Dagseddel</h1>
   </div>
-  <nav><a href="admin.html">Admin</a></nav>
+  <nav>
+    <a href="admin.html">Admin</a>
+  </nav>
 </header>
 
 <main>
-  <form id="form">
+  <!-- LÅS / LOGIN -->
+  <section id="lock" class="card">
+    <h2>Log ind med kode</h2>
+    <p class="hint">Indtast din medarbejderkode. Admin kan ændre koder i admin.</p>
+    <label>Kode</label>
+    <input type="password" id="pin" inputmode="numeric" pattern="[0-9]*" placeholder="••••" autofocus>
+    <div class="actions">
+      <button class="primary" id="unlockBtn">Lås op</button>
+      <button id="gotoAdmin">Admin (0705)</button>
+    </div>
+    <p id="lockMsg" class="danger" style="display:none;margin-top:8px"></p>
+  </section>
+
+  <!-- FORMULAREN (skjult indtil låst op) -->
+  <form id="form" style="display:none">
     <section class="card">
+      <div class="bar-between">
+        <div class="who">Logget ind som: <strong id="who"></strong></div>
+        <button type="button" id="switchUser" class="secondary btn-small">Skift bruger</button>
+      </div>
+
       <div class="grid-2">
         <div>
           <label>Dato</label>
@@ -90,15 +111,59 @@
 (() => {
   const LS_FORM = 'ds_form_v1';
   const LS_ADMIN = 'ds_admin_v1';
-  const $ = s => document.querySelector(s);
+  const LS_USERS = 'ds_users_v1';
+  const LS_ACTIVE_USER = 'ds_active_user_v1';
 
+  const $ = s => document.querySelector(s);
+  const nowDate = () => new Date().toISOString().slice(0,10);
+
+  // --- users storage helpers ---
+  function getUsers(){
+    try { return JSON.parse(localStorage.getItem(LS_USERS)||'[]'); } catch { return []; }
+  }
+  function getAdminCfg(){
+    try { return JSON.parse(localStorage.getItem(LS_ADMIN)||'{}'); } catch { return {}; }
+  }
+  function setActiveUser(u){ localStorage.setItem(LS_ACTIVE_USER, JSON.stringify(u)); }
+  function getActiveUser(){ try { return JSON.parse(localStorage.getItem(LS_ACTIVE_USER)||'null'); } catch { return null; } }
+
+  // --- lock screen ---
+  function tryUnlock(){
+    const pin = $('#pin').value.trim();
+    if (!pin) return;
+
+    // admin direct
+    const adminCode = (getAdminCfg().adminCode || '0705').trim();
+    if (pin === adminCode) {
+      window.location.href = 'admin.html';
+      return;
+    }
+
+    const users = getUsers().filter(u => u.active!==false);
+    const hit = users.find(u => String(u.code) === pin);
+    if (!hit) {
+      $('#lockMsg').textContent = 'Ugyldig kode eller bruger ikke aktiv.';
+      $('#lockMsg').style.display = 'block';
+      return;
+    }
+    // success
+    setActiveUser(hit);
+    showFormFor(hit);
+  }
+
+  function showFormFor(user){
+    $('#lock').style.display = 'none';
+    $('#form').style.display = '';
+    $('#who').textContent = user.name;
+    $('#name').value = user.name || '';
+    $('#date').value = $('#date').value || nowDate();
+  }
+
+  // --- draft helpers ---
   function loadDraft(){ try{return JSON.parse(localStorage.getItem(LS_FORM)||'{}')}catch{return{}} }
   function saveDraft(v){ localStorage.setItem(LS_FORM, JSON.stringify(v)); }
-  function getAdmin(){ try{return JSON.parse(localStorage.getItem(LS_ADMIN)||'{}')}catch{return{}} }
-
   function fill(v){
-    $('#date').value = v.date || new Date().toISOString().slice(0,10);
-    $('#name').value = v.name || '';
+    $('#date').value = v.date || nowDate();
     $('#customer').value = v.customer || '';
     $('#location').value = v.location || '';
     $('#machine').value = v.machine || '';
@@ -110,7 +175,6 @@
     $('#km').value = v.km ?? 0;
     $('#note').value = v.note || '';
   }
-
   function gather(){
     return {
       date: $('#date').value,
@@ -127,15 +191,13 @@
       note: $('#note').value.trim()
     };
   }
-
   function buildMail(vals){
-    const admin = getAdmin();
+    const admin = getAdminCfg();
     const to = (admin.emails || 'vaerksted@bredsgaard.dk').replace(/\s+/g,'');
     const subjectPrefix = admin.subjectPrefix || 'Dagseddel';
     const subject = `${subjectPrefix} – ${vals.date} – ${vals.name} – ${vals.customer || ''}`;
     const footer = (admin.footer || 'Ref.: {dato} – {medarbejder}')
-      .replace('{dato}', vals.date).replace('{medarbejder}', vals.name);
-
+                    .replace('{dato}', vals.date).replace('{medarbejder}', vals.name);
     const body = `
 Medarbejder: ${vals.name}
 Dato: ${vals.date}
@@ -166,14 +228,31 @@ ${footer}`.trim();
     return `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   }
 
-  // init
+  // --- init ---
+  // if a user was active earlier, resume
+  const active = getActiveUser();
+  if (active) showFormFor(active);
   fill(loadDraft());
+
+  // lock events
+  $('#unlockBtn').addEventListener('click', tryUnlock);
+  $('#pin').addEventListener('keydown', e => { if (e.key==='Enter') tryUnlock(); });
+  $('#gotoAdmin').addEventListener('click', () => location.href='admin.html');
+
+  // form events
   $('#save').addEventListener('click', () => { saveDraft(gather()); alert('Kladde gemt på denne enhed.'); });
   $('#print').addEventListener('click', () => window.print());
+  $('#form').addEventListener('submit', e => {
+    e.preventDefault();
+    const vals = gather();
+    if (!vals.name || !vals.work) { alert('Udfyld mindst Medarbejdernavn og Arbejdet art.'); return; }
+    saveDraft(vals);
+    window.location.href = buildMail(vals);
+  });
 
-  // billeder preview
-  const input = document.getElementById('images');
-  const preview = document.getElementById('preview');
+  // images preview
+  const input = $('#images');
+  const preview = $('#preview');
   input.addEventListener('change', () => {
     preview.innerHTML = '';
     [...input.files].slice(0,5).forEach(f => {
@@ -183,15 +262,16 @@ ${footer}`.trim();
     });
   });
 
-  // submit → mailto
-  document.getElementById('form').addEventListener('submit', e => {
-    e.preventDefault();
-    const vals = gather();
-    if (!vals.name || !vals.work) { alert('Udfyld mindst Medarbejdernavn og Arbejdet art.'); return; }
-    saveDraft(vals);
-    window.location.href = buildMail(vals);
+  // switch user (lock)
+  $('#switchUser').addEventListener('click', () => {
+    localStorage.removeItem(LS_ACTIVE_USER);
+    $('#form').style.display = 'none';
+    $('#lock').style.display = '';
+    $('#pin').value = '';
+    $('#pin').focus();
   });
 })();
 </script>
 </body>
 </html>
+
