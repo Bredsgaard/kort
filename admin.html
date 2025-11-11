@@ -85,11 +85,11 @@
 
   <!-- BRUGERE -->
   <section id="usersCard" class="card" style="display:none">
-    <h2>Brugere & koder</h2>
+    <h2>Brugere</h2>
     <div class="grid-3">
       <div><label>Navn</label><input id="uName" placeholder="Fx Per Bonde" /></div>
       <div><label>Brugernavn</label><input id="uUsername" placeholder="fx pbo" /></div>
-      <div><label>Kode (PIN)</label><input id="uCode" placeholder="1234" inputmode="numeric" pattern="[0-9]*" /></div>
+      <div><label>Ny kode (valgfri ved redigering)</label><input type="password" id="uCode" placeholder="••••" inputmode="numeric" pattern="[0-9]*" /></div>
     </div>
     <div class="actions" style="margin-top:10px">
       <button class="primary" id="addUser">Tilføj / Opdatér</button>
@@ -98,7 +98,7 @@
 
     <div class="tableWrap">
       <table class="table">
-        <thead><tr><th>Navn</th><th>Brugernavn</th><th>Kode</th><th>Aktiv</th><th>Handling</th></tr></thead>
+        <thead><tr><th>Navn</th><th>Brugernavn</th><th>Aktiv</th><th>Handling</th></tr></thead>
         <tbody id="usersTable"></tbody>
       </table>
     </div>
@@ -119,6 +119,7 @@
   const getUsers = () => JSON.parse(localStorage.getItem(LS_USERS) || '[]');
   const setUsers = v => localStorage.setItem(LS_USERS, JSON.stringify(v));
 
+  // --- Admin unlock ---
   $('#adminUnlock').onclick = () => {
     if (($('#adminPin').value||'').trim() === ADMIN_CODE) {
       $('#adminLock').style.display='none';
@@ -128,6 +129,7 @@
     } else { $('#adminMsg').textContent='Forkert kode.'; $('#adminMsg').style.display='block'; }
   };
 
+  // --- Load/save cfg ---
   function load(){
     const c=getCfg();
     $('#appTitle').textContent = c.appName || 'Admin';
@@ -139,7 +141,6 @@
     document.querySelectorAll('.req').forEach(cb => cb.checked = (c.requiredFields||[]).includes(cb.value));
     renderUsers();
   }
-
   $('#saveCfg').onclick = () => {
     const required = [...document.querySelectorAll('.req')].filter(cb=>cb.checked).map(cb=>cb.value);
     setCfg({
@@ -152,15 +153,16 @@
     });
     alert('Indstillinger gemt.');
   };
-
   $('#resetCfg').onclick = () => { localStorage.removeItem(LS_ADMIN); load(); };
 
+  // --- Users (kode aldrig vist) ---
   function renderUsers(){
     const tbody = $('#usersTable'); tbody.innerHTML='';
     getUsers().forEach((u,i)=>{
       const tr=document.createElement('tr');
       tr.innerHTML = `
-        <td>${u.name}</td><td>${u.username}</td><td>${u.code}</td>
+        <td>${u.name}</td>
+        <td>${u.username}</td>
         <td>${u.active!==false?'Ja':'Nej'}</td>
         <td class="actions-inline">
           <button data-i="${i}" class="edit">Redigér</button>
@@ -171,7 +173,8 @@
     });
     tbody.querySelectorAll('.edit').forEach(b=>b.onclick=e=>{
       const u=getUsers()[+e.target.dataset.i];
-      $('#uName').value=u.name; $('#uUsername').value=u.username; $('#uCode').value=u.code;
+      $('#uName').value=u.name; $('#uUsername').value=u.username;
+      $('#uCode').value=''; // kode vises aldrig – udfyld kun hvis du vil ændre
     });
     tbody.querySelectorAll('.toggle').forEach(b=>b.onclick=e=>{
       const i=+e.target.dataset.i; const arr=getUsers(); arr[i].active=!(arr[i].active!==false); setUsers(arr); renderUsers();
@@ -182,15 +185,31 @@
   }
 
   $('#addUser').onclick = () => {
-    const name=$('#uName').value.trim(), username=$('#uUsername').value.trim(), code=$('#uCode').value.trim();
-    if(!name||!username||!code) return alert('Udfyld navn, brugernavn og kode');
-    const arr=getUsers(); const i=arr.findIndex(u=>u.username.toLowerCase()===username.toLowerCase());
-    const payload={name, username, code, active:true}; if(i>=0) arr[i]=payload; else arr.push(payload);
-    setUsers(arr); renderUsers(); alert('Bruger gemt.');
+    const name=$('#uName').value.trim(),
+          username=$('#uUsername').value.trim(),
+          newCode=$('#uCode').value.trim(); // kan være tom
+
+    if(!name||!username) return alert('Udfyld navn og brugernavn');
+    const arr=getUsers();
+    const i=arr.findIndex(u=>u.username.toLowerCase()===username.toLowerCase());
+    if(i>=0){
+      // opdater eksisterende – kun skift kode hvis udfyldt
+      arr[i].name = name;
+      arr[i].username = username;
+      if(newCode) arr[i].code = newCode;
+      arr[i].active = true;
+    } else {
+      if(!newCode) return alert('Angiv en kode for nye brugere');
+      arr.push({name, username, code:newCode, active:true});
+    }
+    setUsers(arr); renderUsers(); $('#uCode').value='';
+    alert('Bruger gemt.');
   };
+
   $('#clearInputs').onclick = ()=>{ $('#uName').value=''; $('#uUsername').value=''; $('#uCode').value=''; };
 })();
 </script>
 </body>
 </html>
+
 
