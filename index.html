@@ -22,12 +22,10 @@
           <label>Dato</label>
           <input id="date" class="input" type="date">
         </div>
-
         <div class="field third">
           <label>Maskin nr <span class="req">★</span></label>
           <input id="maskinNr" class="input" placeholder="Fx serienr./intern nr">
         </div>
-
         <div class="field third">
           <label>Maskintimer <span class="req">★</span></label>
           <input id="maskintimer" class="input" type="number" min="0" step="1" placeholder="Fx 100">
@@ -37,12 +35,10 @@
           <label>Kørte km <span class="req">★</span></label>
           <input id="km" class="input" type="number" min="0" step="1" placeholder="Fx 25">
         </div>
-
         <div class="field third">
           <label>Svejsning (timer) <span class="req">★</span></label>
           <input id="svejsningTimer" class="input" type="number" min="0" step="0.5" placeholder="Fx 1.5">
         </div>
-
         <div class="field third">
           <label>Elektroder (stk) <span class="req">★</span></label>
           <input id="elektroder" class="input" type="number" min="0" step="1" placeholder="Fx 10">
@@ -52,12 +48,10 @@
           <label>Diesel (liter) <span class="req">★</span></label>
           <input id="diesel" class="input" type="number" min="0" step="1" placeholder="Fx 5">
         </div>
-
         <div class="field third">
           <label>Normal timer <span class="req">★</span></label>
           <input id="normalTimer" class="input" type="number" min="0" step="0.25" placeholder="Fx 7.5">
         </div>
-
         <div class="field third">
           <label>Overtimer <span class="req">★</span></label>
           <input id="overtimer" class="input" type="number" min="0" step="0.25" placeholder="Fx 2">
@@ -99,8 +93,7 @@
         <button id="sendEmail" class="button">Send via e-mail</button>
       </div>
       <small class="hint">
-        “Arbejdet art” er altid påkrævet. Øvrige krav styres i Demo Admin.  
-        Alt gemmes lokalt i denne browser (ingen database).
+        “Arbejdet art” er altid påkrævet. Øvrige krav styres i Demo Admin. Alt gemmes lokalt.
       </small>
     </section>
 
@@ -113,33 +106,30 @@
     </section>
   </main>
 
-  <footer class="footer">
-    © Bredsgaard A/S
-  </footer>
+  <footer class="footer">© Bredsgaard A/S</footer>
 
 <script>
-/* ---------- Simple “fase 1” demo – kun LocalStorage ---------- */
-const K_SETTINGS = 'ak_demo_settings';
-const K_CARDS    = 'ak_demo_cards';
+/* ——— Robust “no-db” demo ——— */
 
-const DEFAULTS = {
-  emailRecipient: 'pb@bredsgaard.dk',
-  workTypes: ['Service','Olieskift','Kædeskift'],
-  requiredFields:[
-    'maskinNr','maskintimer','km','svejsningTimer','elektroder',
-    'diesel','normalTimer','overtimer','beskrivelse'
-  ],
+// SIKKER klon-utility (i stedet for structuredClone)
+function cloneDeep(v){ try{ return JSON.parse(JSON.stringify(v)); }catch(e){ return v; } }
+
+const K_SETTINGS='ak_demo_settings';
+const K_CARDS='ak_demo_cards';
+
+const DEFAULTS={
+  emailRecipient:'pb@bredsgaard.dk',
+  workTypes:['Service','Olieskift','Kædeskift'],
+  requiredFields:['maskinNr','maskintimer','km','svejsningTimer','elektroder','diesel','normalTimer','overtimer','beskrivelse'],
   consumables:[{name:'Olie',unit:'L'},{name:'Kabler',unit:'stk'},{name:'Kobling',unit:'stk'}]
 };
 
-function load(k,f){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):structuredClone(f); }catch(e){ return structuredClone(f); } }
-function save(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
-
-function ensureDefaults(){
-  if(!localStorage.getItem(K_SETTINGS)) save(K_SETTINGS, DEFAULTS);
-  if(!localStorage.getItem(K_CARDS)) save(K_CARDS, []);
+function load(key, fallback){
+  try{ const v=localStorage.getItem(key); return v?JSON.parse(v):cloneDeep(fallback); }
+  catch(e){ return cloneDeep(fallback); }
 }
-
+function save(key, value){ localStorage.setItem(key, JSON.stringify(value)); }
+function ensureDefaults(){ if(!localStorage.getItem(K_SETTINGS)) save(K_SETTINGS, DEFAULTS); if(!localStorage.getItem(K_CARDS)) save(K_CARDS, []); }
 function getSettings(){ return load(K_SETTINGS, DEFAULTS); }
 function listCards(){ return load(K_CARDS, []); }
 function putCards(xs){ save(K_CARDS, xs); }
@@ -148,8 +138,7 @@ function initForm(){
   document.getElementById('date').value = new Date().toISOString().slice(0,10);
 
   // Arbejdstyper
-  const s = getSettings();
-  const sel = document.getElementById('arbejdetArt');
+  const s=getSettings(); const sel=document.getElementById('arbejdetArt');
   sel.innerHTML = '<option value="">Vælg...</option>' + (s.workTypes||[]).map(w=>`<option>${w}</option>`).join('');
 
   // Forbrug
@@ -168,7 +157,6 @@ function bindImages(){
   const input=document.getElementById('imgInput');
   const count=document.getElementById('imgCount');
   const strip=document.getElementById('thumbs');
-
   pick.onclick=()=>input.click();
   input.onchange=async ()=>{
     for(const f of input.files){
@@ -177,11 +165,10 @@ function bindImages(){
     count.textContent=String(state.images.length);
     renderThumbs();
   };
-
   function renderThumbs(){
     strip.innerHTML='';
     state.images.forEach((src,i)=>{
-      const img=new Image(); img.src=src; img.className='thumb'; img.title='Klik for at fjerne'; img.style.cursor='pointer';
+      const img=new Image(); img.src=src; img.className='thumb'; img.style.cursor='pointer'; img.title='Klik for at fjerne';
       img.onclick=()=>{ state.images.splice(i,1); count.textContent=String(state.images.length); renderThumbs(); };
       strip.appendChild(img);
     });
@@ -190,60 +177,41 @@ function bindImages(){
 
 function val(id){ return document.getElementById(id).value.trim(); }
 function buildCard(status){
-  const cons = Array.from(document.querySelectorAll('.cons'))
-    .map(i=>({name:i.dataset.name, unit:i.dataset.unit, qty: Number(i.value||0)}))
-    .filter(c=>c.qty>0);
-
+  const cons=Array.from(document.querySelectorAll('.cons'))
+    .map(i=>({name:i.dataset.name,unit:i.dataset.unit,qty:Number(i.value||0)}))
+    .filter(x=>x.qty>0);
   return {
-    id: crypto.randomUUID(),
-    date: val('date'),
-    maskinNr: val('maskinNr'),
-    maskintimer: val('maskintimer'),
-    km: val('km'),
-    svejsningTimer: val('svejsningTimer'),
-    elektroder: val('elektroder'),
-    diesel: val('diesel'),
-    normalTimer: val('normalTimer'),
-    overtimer: val('overtimer'),
-    arbejdetsArt: val('arbejdetArt'),
-    beskrivelse: val('beskrivelse'),
-    consumables: cons,
-    images: state.images.slice(),
-    status,
-    createdAt: Date.now(),
-    updatedAt: Date.now()
+    id: (crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random()),
+    date: val('date'), maskinNr: val('maskinNr'), maskintimer: val('maskintimer'),
+    km: val('km'), svejsningTimer: val('svejsningTimer'), elektroder: val('elektroder'),
+    diesel: val('diesel'), normalTimer: val('normalTimer'), overtimer: val('overtimer'),
+    arbejdetsArt: val('arbejdetArt'), beskrivelse: val('beskrivelse'),
+    consumables: cons, images: cloneDeep(state.images), status, createdAt: Date.now(), updatedAt: Date.now()
   };
 }
 
 function requiredOk(card){
-  const s = getSettings(); const set = new Set(s.requiredFields||[]);
-  if(!card.arbejdetsArt) return false; // altid påkrævet
-  for(const k of set){ if(card[k]===undefined || String(card[k]).trim()==="") return false; }
+  const s=getSettings(); const req=new Set(s.requiredFields||[]);
+  if(!card.arbejdetsArt) return false;
+  for(const k of req){ if(card[k]===undefined || String(card[k]).trim()==="") return false; }
   return true;
 }
-
-function saveCard(card){
-  const xs = listCards();
-  xs.unshift(card);
-  putCards(xs);
-  renderHistory();
-}
+function saveCard(card){ const xs=listCards(); xs.unshift(card); putCards(xs); renderHistory(); }
 
 function renderHistory(){
   const tb=document.querySelector('#histTable tbody'); tb.innerHTML='';
-  const now=new Date(); const from=new Date(now.getFullYear(), now.getMonth(), now.getDate()-30);
-  listCards()
-    .filter(c=> new Date(c.date)>=from && new Date(c.date)<=now)
+  const now=new Date(); const from=new Date(now.getFullYear(),now.getMonth(),now.getDate()-30);
+  listCards().filter(c=> new Date(c.date)>=from && new Date(c.date)<=now)
     .forEach(r=>{
       const tr=document.createElement('tr');
-      tr.innerHTML=`<td>${r.date}</td><td>${r.arbejdetsArt||'-'}</td><td>${r.status==='sent' ? '<span class="badge sent">Sendt</span>' : '<span class="badge draft">Kladde</span>'}</td>`;
+      tr.innerHTML=`<td>${r.date}</td><td>${r.arbejdetsArt||'-'}</td><td>${r.status==='sent'?'<span class="badge sent">Sendt</span>':'<span class="badge draft">Kladde</span>'}</td>`;
       tb.appendChild(tr);
     });
 }
 
 function sendMail(card){
-  const to = (getSettings().emailRecipient || 'pb@bredsgaard.dk').trim();
-  const lines = [
+  const to=(getSettings().emailRecipient||'pb@bredsgaard.dk').trim();
+  const lines=[
     `Dato: ${card.date}`,
     `Maskin nr: ${card.maskinNr}`,
     `Maskintimer: ${card.maskintimer}`,
@@ -260,41 +228,24 @@ function sendMail(card){
     `Fejlbeskrivelse / Udført arbejde:`,
     `${card.beskrivelse||'-'}`
   ];
-  const subject = encodeURIComponent(`[Arbejdskort] ${card.date} – ${card.arbejdetsArt||'Uden art'} – ${card.maskinNr||''}`);
-  const body    = encodeURIComponent(lines.join('\n'));
-  location.href = `mailto:${encodeURIComponent(to)}?subject=${subject}&body=${body}`;
+  const subject=encodeURIComponent(`[Arbejdskort] ${card.date} – ${card.arbejdetsArt||'Uden art'} – ${card.maskinNr||''}`);
+  const body=encodeURIComponent(lines.join('\n'));
+  location.href=`mailto:${encodeURIComponent(to)}?subject=${subject}&body=${body}`;
 }
 
-/* ---- init ---- */
+// Init
 ensureDefaults();
 initForm();
 bindImages();
 renderHistory();
 
-document.getElementById('saveDraft').onclick = ()=>{
-  const card = buildCard('draft');
-  saveCard(card);
-  alert('Kladde gemt.');
-  location.reload();
-};
-
-document.getElementById('saveSend').onclick = ()=>{
-  const card = buildCard('sent');
-  if(!requiredOk(card)) return alert('Udfyld alle påkrævede felter (★) inkl. Arbejdet art.');
-  saveCard(card);
-  alert('Markeret som sendt.');
-  location.reload();
-};
-
-document.getElementById('sendEmail').onclick = ()=>{
-  const card = buildCard('sent');
-  if(!requiredOk(card)) return alert('Udfyld alle påkrævede felter (★) inkl. Arbejdet art.');
-  saveCard(card);
-  sendMail(card);
-};
+document.getElementById('saveDraft').onclick=()=>{ const c=buildCard('draft'); saveCard(c); alert('Kladde gemt.'); location.reload(); };
+document.getElementById('saveSend').onclick=()=>{ const c=buildCard('sent'); if(!requiredOk(c)) return alert('Udfyld alle felter (★) inkl. Arbejdet art.'); saveCard(c); alert('Markeret som sendt.'); location.reload(); };
+document.getElementById('sendEmail').onclick=()=>{ const c=buildCard('sent'); if(!requiredOk(c)) return alert('Udfyld alle felter (★) inkl. Arbejdet art.'); saveCard(c); sendMail(c); };
 </script>
 </body>
 </html>
+
 
 
 
