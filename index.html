@@ -12,7 +12,11 @@
     <img src="img/logo.png" alt="" onerror="this.style.display='none'">
     <h1 id="appTitle">Arbejdskort</h1>
   </div>
-  <nav><a href="admin.html">Admin</a></nav>
+  <nav class="actions-inline">
+    <a class="link" href="history.html">Tidligere arbejdskort</a>
+    <button id="logout" class="secondary btn-small" type="button" style="display:none">Log ud</button>
+    <a class="link" href="admin.html">Admin</a>
+  </nav>
 </header>
 
 <main>
@@ -37,33 +41,14 @@
     <p id="lockMsg" class="danger" style="display:none;margin-top:8px"></p>
   </section>
 
-  <!-- DASHBOARD -->
-  <section id="dash" class="card" style="display:none">
-    <div class="bar-between">
-      <div>Logget ind som: <strong id="who"></strong></div>
-      <div class="actions-inline">
-        <select id="rangeSel">
-          <option value="7">Seneste 7 dage</option>
-          <option value="30">Seneste 30 dage</option>
-        </select>
-        <button id="logout" class="secondary btn-small" type="button">Log ud</button>
-      </div>
-    </div>
-
-    <div class="actions">
-      <button id="newCard" class="primary" type="button">➕ Nyt arbejdskort</button>
-    </div>
-
-    <h3 style="margin-top:10px">Mine arbejdskort</h3>
-    <div id="cards"></div>
-  </section>
-
-  <!-- FORM -->
+  <!-- ARBEJDSKORT (default UI efter login) -->
   <form id="form" style="display:none" autocomplete="off">
     <section class="card">
       <div class="bar-between">
         <div><strong>Kort-id:</strong> <span id="cardIdShort">NYT</span></div>
-        <button type="button" id="backToDash" class="secondary btn-small">Tilbage</button>
+        <div class="actions-inline">
+          <a class="link" href="history.html">Se tidligere</a>
+        </div>
       </div>
 
       <div class="grid-2">
@@ -146,6 +131,7 @@
       <textarea id="note" rows="2" placeholder="Evt. bemærkninger"></textarea>
 
       <div class="actions">
+        <button type="button" id="newBlank">➕ Nyt (ryd felter)</button>
         <button type="button" id="save">💾 Gem (udkast)</button>
         <button type="button" id="print">Udskriv / PDF</button>
         <button type="submit" class="primary">✉️ Send (markeres sendt)</button>
@@ -167,7 +153,7 @@
 
 <script>
 (() => {
-  const LS_ADMIN='ak_admin_v3', LS_USERS='ak_users_v2', LS_ACTIVE='ak_active_v1', LS_CARDS='ak_cards_v2';
+  const LS_ADMIN='ak_admin_v3', LS_USERS='ak_users_v2', LS_ACTIVE='ak_active_v1', LS_CARDS='ak_cards_v2', LS_OPEN='ak_open_id';
   const $ = s => document.querySelector(s);
   const cfg = () => JSON.parse(localStorage.getItem(LS_ADMIN)||'{}');
   const users = () => JSON.parse(localStorage.getItem(LS_USERS)||'[]');
@@ -178,94 +164,47 @@
   const today = () => new Date().toISOString().slice(0,10);
   const uid = () => Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-4);
 
+  // init page title + loginfelter
   document.addEventListener('DOMContentLoaded', () => {
+    $('#appTitle').textContent = cfg().appName || 'Arbejdskort';
     const u = $('#loginUser'), p = $('#loginPin');
     if (u) u.value=''; if (p) p.value='';
-    $('#appTitle').textContent = cfg().appName || 'Arbejdskort';
   });
 
-  function resetToLogin(){
+  function showForm(){
+    $('#lock').style.display='none';
+    $('#form').style.display='';
+    $('#logout').style.display='';
+  }
+  function showLogin(){
     $('#lock').style.display='';
-    $('#dash').style.display='none';
     $('#form').style.display='none';
-    $('#loginUser').value='';
-    $('#loginPin').value='';
+    $('#logout').style.display='none';
+    $('#loginUser').value=''; $('#loginPin').value='';
   }
 
+  // Login
   $('#unlockBtn').onclick = () => {
     const un=($('#loginUser').value||'').trim().toLowerCase();
     const pin=($('#loginPin').value||'').trim();
     const u = users().find(x => x.active!==false && (x.username||'').toLowerCase()===un && String(x.code)===pin);
     if(!u){ $('#lockMsg').textContent='Forkert brugernavn eller kode – eller bruger inaktiv.'; $('#lockMsg').style.display='block'; return; }
-    setActive(u); showDash();
+    setActive(u);
+    prepareNew(); // start i tomt kort
+    // Hvis history har valgt et kort, åbnes det i stedet:
+    const openId = localStorage.getItem(LS_OPEN);
+    if (openId) { localStorage.removeItem(LS_OPEN); openCard(openId); }
+    showForm();
   };
 
-  function purgeOldDrafts(){
-    const days = Math.max(1, parseInt(cfg().retentionDays||'7',10));
-    const cutoff = Date.now() - days*24*3600*1000;
-    setCards(allCards().filter(c => !(c.status==='draft' && new Date(c.createdAt).getTime() < cutoff)));
-  }
+  $('#logout').onclick = ()=>{ localStorage.removeItem(LS_ACTIVE); showLogin(); };
 
-  function filteredCards(days){
-    const u = active(); if(!u) return [];
-    const cutoff = Date.now() - days*24*3600*1000;
-    return allCards()
-      .filter(c => c.user===u.username && new Date(c.updatedAt).getTime() >= cutoff)
-      .sort((a,b)=>new Date(b.updatedAt)-new Date(a.updatedAt));
-  }
+  // Form helpers
+  let currentId = null;
 
-  function renderList(){
-    const days = parseInt($('#rangeSel').value,10);
-    const list = filteredCards(days);
-    const box = $('#cards'); box.innerHTML='';
-    if(list.length===0){ box.innerHTML='<p class="hint">Ingen arbejdskort i valgt periode.</p>'; return; }
-    list.forEach(c=>{
-      const f=c.fields||{};
-      const row=document.createElement('div');
-      row.className='card';
-      row.innerHTML=`
-        <div class="bar-between">
-          <div><strong>${f.date||''}</strong> · ${f.customer||'(uden kunde)'} · <span class="${c.status==='sent'?'':'hint'}">${c.status==='sent'?'Sendt':'Udkast'}</span></div>
-          <div class="actions-inline">
-            <button data-id="${c.id}" class="open">Åbn</button>
-            <button data-id="${c.id}" class="del danger">Slet</button>
-          </div>
-        </div>`;
-      box.appendChild(row);
-    });
-    box.querySelectorAll('.open').forEach(b=>b.onclick=e=>openCard(e.target.dataset.id));
-    box.querySelectorAll('.del').forEach(b=>b.onclick=e=>{
-      const id=e.target.dataset.id; if(confirm('Slet dette kort?')){ setCards(allCards().filter(x=>x.id!==id)); renderList(); }
-    });
-  }
-
-  function showDash(){
-    const u=active(); if(!u){ resetToLogin(); return; }
-    purgeOldDrafts();
-    $('#who').textContent = `${u.name}`; // viser kun navn
-    $('#lock').style.display='none'; $('#form').style.display='none'; $('#dash').style.display='';
-    renderList();
-  }
-
-  // --- Nyt arbejdskort (robust handler) ---
-  function startNewCard(){
+  function prepareNew(){
     currentId = uid();
     $('#cardIdShort').textContent='NYT';
-    clearForm();
-    $('#dash').style.display='none';
-    $('#form').style.display='';
-  }
-  document.addEventListener('click', (e) => {
-    const newBtn = e.target.closest('#newCard');
-    if (newBtn) { e.preventDefault(); startNewCard(); }
-  });
-
-  $('#rangeSel').onchange = renderList;
-  $('#logout').onclick = () => { localStorage.removeItem(LS_ACTIVE); resetToLogin(); };
-
-  // ---- FORM ----
-  let currentId=null;
-  function clearForm(){
     $('#date').value=today();
     $('#name').value=active()?.name||'';
     $('#customer').value=''; $('#location').value=''; $('#machine').value=''; $('#machineNo').value='';
@@ -273,21 +212,6 @@
     $('#hours').value=0; $('#overtime').value=0;
     $('#work').value=''; $('#fault').value=''; $('#done').value=''; $('#note').value='';
     const p=document.getElementById('preview'); if(p) p.innerHTML='';
-  }
-  $('#backToDash').onclick = ()=>{ upsert('draft'); showDash(); };
-  $('#print').onclick = ()=>window.print();
-
-  function openCard(id){
-    const c=allCards().find(x=>x.id===id); if(!c) return;
-    currentId=id; $('#cardIdShort').textContent=id.slice(0,6).toUpperCase();
-    const f=c.fields||{};
-    $('#date').value=f.date||today(); $('#name').value=active().name;
-    $('#customer').value=f.customer||''; $('#location').value=f.location||''; $('#machine').value=f.machine||'';
-    $('#machineNo').value=f.machineNo||''; $('#mhours').value=f.mhours??0; $('#km').value=f.km??0;
-    $('#welding').value=f.welding??0; $('#electrodes').value=f.electrodes??0; $('#diesel').value=f.diesel??0;
-    $('#hours').value=f.hours??0; $('#overtime').value=f.overtime??0;
-    $('#work').value=f.work||''; $('#fault').value=f.fault||''; $('#done').value=f.done||''; $('#note').value=f.note||'';
-    $('#dash').style.display='none'; $('#form').style.display='';
   }
 
   function gather(){
@@ -357,13 +281,15 @@ ${footer}`.trim();
     return `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
   }
 
+  // knapper
+  $('#newBlank').onclick = ()=>prepareNew();
   $('#save').onclick = ()=>{ upsert('draft'); alert('Gemte som udkast.'); };
+  $('#print').onclick = ()=>window.print();
   document.getElementById('form').addEventListener('submit', e=>{
     e.preventDefault();
     if(!requiredOk()) return;
     upsert('sent');
     window.location.href=buildMail(gather());
-    setTimeout(()=>{ showDash(); },300);
   });
 
   // billede preview
@@ -375,9 +301,34 @@ ${footer}`.trim();
     });
   }
 
-  // init
-  resetToLogin();
+  // Åbn eksisterende kort (kaldt fra historik via LS_OPEN)
+  function openCard(id){
+    const u = active(); if(!u) return;
+    const c=allCards().find(x=>x.id===id && x.user===u.username); if(!c) return;
+    currentId=id; $('#cardIdShort').textContent=id.slice(0,6).toUpperCase();
+    const f=c.fields||{};
+    $('#date').value=f.date||today(); $('#name').value=u.name;
+    $('#customer').value=f.customer||''; $('#location').value=f.location||''; $('#machine').value=f.machine||'';
+    $('#machineNo').value=f.machineNo||''; $('#mhours').value=f.mhours??0; $('#km').value=f.km??0;
+    $('#welding').value=f.welding??0; $('#electrodes').value=f.electrodes??0; $('#diesel').value=f.diesel??0;
+    $('#hours').value=f.hours??0; $('#overtime').value=f.overtime??0;
+    $('#work').value=f.work||''; $('#fault').value=f.fault||''; $('#done').value=f.done||''; $('#note').value=f.note||'';
+  }
+
+  // Hvis der allerede er en aktiv bruger, gå direkte til form
+  (function autoOpen(){
+    const u=active();
+    if (u) {
+      prepareNew();
+      const openId = localStorage.getItem(LS_OPEN);
+      if (openId) { localStorage.removeItem(LS_OPEN); openCard(openId); }
+      showForm();
+    } else {
+      showLogin();
+    }
+  })();
 })();
 </script>
 </body>
 </html>
+
