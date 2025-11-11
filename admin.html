@@ -20,17 +20,9 @@
   <section id="adminLock" class="card" autocomplete="off">
     <h2>Admin adgang</h2>
     <label>Admin-kode</label>
-    <input
-      type="password"
-      id="adminPin"
-      inputmode="numeric"
-      pattern="[0-9]*"
-      placeholder="••••"
-      autocomplete="new-password"
-      autocapitalize="off"
-      autocorrect="off"
-      spellcheck="false"
-    />
+    <input type="password" id="adminPin" inputmode="numeric" pattern="[0-9]*"
+           placeholder="••••" autocomplete="new-password" autocapitalize="off"
+           autocorrect="off" spellcheck="false" />
     <div class="actions">
       <button class="primary" id="adminUnlock">Lås op</button>
     </div>
@@ -93,7 +85,7 @@
     </div>
   </section>
 
-  <!-- BRUGERE (koder vises aldrig) -->
+  <!-- BRUGERE -->
   <section id="usersCard" class="card" style="display:none" autocomplete="off">
     <h2>Brugere</h2>
     <div class="grid-3">
@@ -101,19 +93,11 @@
       <div><label>Brugernavn</label><input id="uUsername" placeholder="fx pbo" autocapitalize="off" /></div>
       <div>
         <label>Ny kode (valgfri ved redigering)</label>
-        <input
-          type="password"
-          id="uCode"
-          placeholder="••••"
-          inputmode="numeric"
-          pattern="[0-9]*"
-          autocomplete="new-password"
-          autocapitalize="off"
-          autocorrect="off"
-          spellcheck="false"
-        />
+        <input type="password" id="uCode" placeholder="••••" inputmode="numeric" pattern="[0-9]*"
+               autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false" />
       </div>
     </div>
+
     <div class="actions" style="margin-top:10px">
       <button class="primary" id="addUser">Tilføj / Opdatér</button>
       <button id="clearInputs">Ryd</button>
@@ -125,6 +109,20 @@
         <tbody id="usersTable"></tbody>
       </table>
     </div>
+
+    <h3 style="margin-top:16px">Backup & flytning</h3>
+    <div class="actions">
+      <button id="exportUsers" class="secondary">Export Brugere+Indstillinger (JSON)</button>
+      <input type="file" id="importUsersFile" accept="application/json" style="display:none">
+      <button id="importUsers" class="secondary">Import Brugere+Indstillinger</button>
+    </div>
+
+    <div class="actions" style="margin-top:8px">
+      <button id="exportCards" class="secondary">Export Arbejdskort (JSON)</button>
+      <input type="file" id="importCardsFile" accept="application/json" style="display:none">
+      <button id="importCards" class="secondary">Import Arbejdskort</button>
+    </div>
+    <p class="hint">Tip: Brug export/import for at kopiere data til en anden browser eller profil. Incognito gemmer ikke data.</p>
   </section>
 </main>
 
@@ -132,27 +130,26 @@
 
 <script>
 (() => {
-  // fast admin
   const ADMIN_CODE = '0705';
   const ADMIN_USERNAME = 'Bonde';
 
-  // storage keys
   const LS_ADMIN = 'ak_admin_v3';
   const LS_USERS = 'ak_users_v2';
+  const LS_CARDS = 'ak_cards_v2';
 
   const $ = s => document.querySelector(s);
-  const getCfg = () => JSON.parse(localStorage.getItem(LS_ADMIN) || '{}');
-  const setCfg = v => localStorage.setItem(LS_ADMIN, JSON.stringify(v));
+  const getCfg   = () => JSON.parse(localStorage.getItem(LS_ADMIN) || '{}');
+  const setCfg   = v  => localStorage.setItem(LS_ADMIN, JSON.stringify(v));
   const getUsers = () => JSON.parse(localStorage.getItem(LS_USERS) || '[]');
-  const setUsers = v => localStorage.setItem(LS_USERS, JSON.stringify(v));
+  const setUsers = v  => localStorage.setItem(LS_USERS, JSON.stringify(v));
+  const getCards = () => JSON.parse(localStorage.getItem(LS_CARDS) || '[]');
+  const setCards = v  => localStorage.setItem(LS_CARDS, JSON.stringify(v));
 
-  // Ryd evt. autofyld ved load
   document.addEventListener('DOMContentLoaded', () => {
-    const pin = document.getElementById('adminPin');
-    if (pin) { pin.value = ''; pin.form && (pin.form.autocomplete = 'off'); }
+    const pin = $('#adminPin');
+    if (pin) { pin.value=''; pin.form && (pin.form.autocomplete='off'); }
   });
 
-  // Sørg for, at admin-bruger findes (kan ikke slettes)
   function ensureAdminUser(){
     const arr = getUsers();
     const i = arr.findIndex(u => (u.username||'').toLowerCase() === ADMIN_USERNAME.toLowerCase());
@@ -160,17 +157,14 @@
       arr.push({ name: 'Admin', username: ADMIN_USERNAME, code: ADMIN_CODE, active: true, system: true });
       setUsers(arr);
     } else {
-      // hold altid aktiv/system-flag
       arr[i].active = true; arr[i].system = true;
       setUsers(arr);
     }
   }
   ensureAdminUser();
 
-  // Admin unlock
   $('#adminUnlock').onclick = () => {
-    const val = ($('#adminPin').value || '').trim();
-    if (val === ADMIN_CODE) {
+    if (($('#adminPin').value||'').trim() === ADMIN_CODE) {
       $('#adminLock').style.display='none';
       $('#panel').style.display='';
       $('#usersCard').style.display='';
@@ -180,7 +174,6 @@
     }
   };
 
-  // Load/save cfg
   function load(){
     const c=getCfg();
     $('#appTitle').textContent = c.appName || 'Admin';
@@ -208,7 +201,6 @@
 
   $('#resetCfg').onclick = () => { localStorage.removeItem(LS_ADMIN); load(); };
 
-  // Users (koder vises aldrig)
   function renderUsers(){
     const tbody = $('#usersTable'); tbody.innerHTML='';
     getUsers().forEach((u,i)=>{
@@ -247,7 +239,7 @@
   $('#addUser').onclick = () => {
     const name=$('#uName').value.trim(),
           username=$('#uUsername').value.trim(),
-          newCode=$('#uCode').value.trim(); // tom = behold gammel
+          newCode=$('#uCode').value.trim();
 
     if(!name||!username) return alert('Udfyld navn og brugernavn');
 
@@ -255,7 +247,6 @@
     const i=arr.findIndex(u=> (u.username||'').toLowerCase()===username.toLowerCase());
 
     if(i>=0){
-      // opdater eksisterende – kun skift kode hvis udfyldt
       arr[i].name = name;
       arr[i].username = username;
       if (newCode) arr[i].code = newCode;
@@ -265,12 +256,53 @@
       arr.push({name, username, code:newCode, active:true});
     }
     setUsers(arr); renderUsers();
-    $('#uCode').value=''; // vis aldrig kode efter gem
+    $('#uCode').value='';
     alert('Bruger gemt.');
   };
 
   $('#clearInputs').onclick = ()=>{ $('#uName').value=''; $('#uUsername').value=''; $('#uCode').value=''; };
+
+  // ---- Export / Import ----
+  function download(filename, obj){
+    const blob = new Blob([JSON.stringify(obj,null,2)], {type:'application/json'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  $('#exportUsers').onclick = ()=>{
+    download('arbejdskort_users_settings.json', { settings: getCfg(), users: getUsers() });
+  };
+  $('#exportCards').onclick = ()=>{
+    download('arbejdskort_cards.json', getCards());
+  };
+
+  $('#importUsers').onclick = ()=> $('#importUsersFile').click();
+  $('#importUsersFile').addEventListener('change', async (e)=>{
+    const file = e.target.files[0]; if(!file) return;
+    const text = await file.text();
+    try{
+      const data = JSON.parse(text);
+      if (data.settings) setCfg(data.settings);
+      if (data.users) setUsers(data.users);
+      alert('Brugere og indstillinger er importeret.');
+      load();
+    } catch { alert('Kunne ikke importere filen.'); }
+    e.target.value='';
+  });
+
+  $('#importCards').onclick = ()=> $('#importCardsFile').click();
+  $('#importCardsFile').addEventListener('change', async (e)=>{
+    const file = e.target.files[0]; if(!file) return;
+    const text = await file.text();
+    try{
+      const arr = JSON.parse(text);
+      if (Array.isArray(arr)) { setCards(arr); alert('Arbejdskort importeret.'); }
+      else alert('Filen indeholder ikke gyldige kort.');
+    } catch { alert('Kunne ikke importere filen.'); }
+    e.target.value='';
+  });
 })();
 </script>
 </body>
 </html>
+
