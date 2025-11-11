@@ -1,27 +1,104 @@
-<!doctype html><html lang="da"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Historik – Arbejdskort</title>
-<link rel="stylesheet" href="css/style.css">
-</head><body>
-<div class="topbar"><div class="wrap"><div>Historik – Arbejdskort</div></div></div>
-<div class="wrap card">
-  <div class="row">
-    <div><label>Brugernavn</label><input id="hu" placeholder="brugernavn"></div>
-    <div>
-      <label>Periode</label>
-      <select id="hd"><option value="7">7 dage</option><option value="30">30 dage</option></select>
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Tidligere arbejdskort – Arbejdskort</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="container bar">
+      <div class="brand">Arbejdskort</div>
+      <nav class="nav">
+        <a class="nav-link" href="index.html">Nyt arbejdskort</a>
+        <a class="nav-link active" href="history.html">Tidligere kort</a>
+        <a class="nav-link" href="admin.html">Admin</a>
+      </nav>
     </div>
-  </div>
-  <div style="margin-top:8px"><button class="btn" id="hgo">Hent</button></div>
-  <table style="margin-top:8px" id="ht"><thead><tr><th>Dato</th><th>Kunde</th><th>Art</th><th>Status</th></tr></thead><tbody></tbody></table>
-</div>
-<script>
-const $=s=>document.querySelector(s);
-document.getElementById('hgo').addEventListener('click', async ()=>{
-  const u=$('#hu').value.trim().toLowerCase(); const d=$('#hd').value;
-  const r=await fetch(`/api/cards?user=${encodeURIComponent(u)}&sinceDays=${d}`); const list=await r.json();
-  const tb=$('#ht tbody'); tb.innerHTML='';
-  list.forEach(c=>{ const tr=document.createElement('tr'); tr.innerHTML=`<td>${c.dateISO.slice(0,10)}</td><td>${c.fields.kunde||''}</td><td>${c.fields.arbejdet_art||''}</td><td>${c.sent?'Sendt':'Gemt'}</td>`; tb.append(tr); });
-});
-</script>
-</body></html>
+  </header>
+
+  <main class="container">
+    <section class="card" aria-labelledby="histTitle">
+      <h1 class="card-title" id="histTitle">Tidligere arbejdskort</h1>
+
+      <!-- Filter -->
+      <div class="form-grid" style="margin-bottom:10px">
+        <div class="field">
+          <label for="fltPeriod">Periode</label>
+          <select id="fltPeriod" class="input">
+            <option value="7">Seneste 7 dage</option>
+            <option value="14">Seneste 14 dage</option>
+            <option value="30" selected>Seneste 30 dage</option>
+            <option value="90">Seneste 3 mdr</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="fltUser">Bruger</label>
+          <input id="fltUser" class="input" type="text" placeholder="Filtrér på brugernavn (valgfrit)">
+        </div>
+        <div class="actions">
+          <button id="btnRefresh" class="btn btn-primary">Opdater</button>
+          <span class="subtle" id="statusMsg"></span>
+        </div>
+      </div>
+
+      <!-- Tabel -->
+      <div class="field-12">
+        <table class="table" id="tbl">
+          <thead>
+            <tr>
+              <th>Dato</th>
+              <th>Bruger</th>
+              <th>Kunde</th>
+              <th>Arbejdet art</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="tblBody">
+            <!-- rækker indlæses via JS -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">© Bredsgaard A/S</footer>
+
+  <script>
+    const $ = (q)=>document.querySelector(q);
+    (function markActive(){
+      const here = location.pathname.split('/').pop() || 'index.html';
+      document.querySelectorAll('.nav-link').forEach(a=>{
+        if(a.getAttribute('href')===here){ a.classList.add('active'); }
+      });
+    })();
+
+    // Demo-data – byt til dit /api (fx /api/cards?days=30&user=...)
+    function loadData(days, user){
+      // Mockede rækker
+      const rows = [
+        {date:'2025-02-01', user:'bh', customer:'Kunde A', type:'Service', status:'Sendt'},
+        {date:'2025-02-02', user:'bh', customer:'Kunde B', type:'Olieskift', status:'Kladde'},
+        {date:'2025-02-03', user:'pbo', customer:'Kunde C', type:'Kædeskift', status:'Sendt'},
+      ].filter(r => !user || r.user.toLowerCase().includes(user.toLowerCase()));
+
+      const body = $('#tblBody'); body.innerHTML='';
+      rows.forEach(r=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${r.date}</td><td>${r.user}</td><td>${r.customer}</td><td>${r.type}</td><td>${r.status}</td>`;
+        body.appendChild(tr);
+      });
+      $('#statusMsg').textContent = `Viser ${rows.length} kort (demo).`;
+    }
+
+    $('#btnRefresh').addEventListener('click', ()=>{
+      loadData($('#fltPeriod').value, $('#fltUser').value.trim());
+    });
+
+    // Første indlæsning
+    loadData($('#fltPeriod').value, $('#fltUser').value.trim());
+  </script>
+</body>
+</html>
