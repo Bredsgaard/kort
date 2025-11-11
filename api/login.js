@@ -1,35 +1,23 @@
-import { kv } from '@vercel/kv';
+import { kv } from "@vercel/kv";
+import { getSettings, sha256 } from "./_util.js";
 
-async function getAdmin() {
-  const s = (await kv.get('ak:settings')) || {};
-  return {
-    adminUser: s.adminUser || 'Bonde',
-    adminPin:  s.adminPin  || '0705'
-  };
-}
+export const config = { runtime: "edge" };
 
-export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).end();
-  try {
-    const { username, code } = req.body || {};
-    if (!username || !code) return res.status(400).json({ ok:false, error:'missing' });
+export default async function handler(req) {
+  if (req.method !== "POST") return new Response("Method Not Allowed", { status: 405 });
+  const { username, code } = await req.json();
 
-    const users = (await kv.get('ak:users')) || [];
-    const u = users.find(x =>
-      (x.username || '').toLowerCase() === String(username).toLowerCase() &&
-      String(x.code) === String(code) &&
-      x.active !== false
-    );
+  const s = await getSettings();
 
-    // tillad også admin-login som bruger (praktisk til første test)
-    const { adminUser, adminPin } = await getAdmin();
-    const adminMatch = (String(username) === adminUser && String(code) === adminPin);
-
-    if (!u && !adminMatch) return res.status(401).json({ ok:false });
-
-    const user = u ? { name: u.name, username: u.username } : { name:'Admin', username: adminUser };
-    res.json({ ok:true, user });
-  } catch (e) {
-    res.status(500).json({ ok:false, error:'server' });
+  // admin
+  if (username === s.adminUser && sha256(code) === s.adminPinHash) {
+    return new Response(JSON.stringify({ success: true, role: "admin", username }), { status: 200, headers: { "content-type": "application/json" } });
   }
+
+  const list = (await kv.get("users:v1")) || [];
+  const u = list.find(x => x.username === String(username).toLowerCase());
+  if (!u || u.active === false) return new Response(JSON.stringify({ success: false }), { status: 200 });
+
+  if (sha256(code) !== u.codeHash) return new Response(JSON.stringify({ success: false }), { status: 200 });
+  return new Response(JSON.stringify({ success: true, role: "user", name: u.name, username: u.username }), { status: 200, headers: { "content-type": "application/json" } });
 }
