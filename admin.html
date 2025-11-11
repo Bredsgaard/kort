@@ -36,8 +36,8 @@
 
     <div class="grid-2">
       <div>
-        <label>Modtager-e-mails (komma-separeret)</label>
-        <input id="emails" placeholder="vaerksted@..., oekonomi@..." />
+        <label>Standard modtager-e-mails (komma-separeret)</label>
+        <input id="emails" placeholder="pb@bredsgaard.dk, vaerksted@..." />
       </div>
       <div>
         <label>Emne-prefix</label>
@@ -60,14 +60,19 @@
           <label><input type="checkbox" class="req" value="name"> Medarbejdernavn</label>
           <label><input type="checkbox" class="req" value="customer"> Kunde</label>
           <label><input type="checkbox" class="req" value="location"> Lokation</label>
+          <label><input type="checkbox" class="req" value="machineNo"> Maskin nr</label>
           <label><input type="checkbox" class="req" value="machine"> Maskine/Model</label>
           <label><input type="checkbox" class="req" value="work"> Arbejdets art</label>
           <label><input type="checkbox" class="req" value="fault"> Fejlbeskrivelse</label>
           <label><input type="checkbox" class="req" value="done"> Udført arbejde</label>
           <label><input type="checkbox" class="req" value="hours"> Normal timer</label>
+          <label><input type="checkbox" class="req" value="overtime"> Overtimer</label>
           <label><input type="checkbox" class="req" value="mhours"> Maskintimer</label>
           <label><input type="checkbox" class="req" value="km"> Kørte km</label>
-          <label><input type="checkbox" class="req" value="note"> Noter</label>
+          <label><input type="checkbox" class="req" value="welding"> Svejsning (timer)</label>
+          <label><input type="checkbox" class="req" value="electrodes"> Elektroder (stk)</label>
+          <label><input type="checkbox" class="req" value="diesel"> Diesel (liter)</label>
+          <label><input type="checkbox" class="req" value="note"> Bemærkninger</label>
         </div>
       </div>
     </div>
@@ -83,16 +88,17 @@
     <h2>Brugere & koder</h2>
     <div class="grid-3">
       <div><label>Navn</label><input id="uName" placeholder="Fx Per Bonde" /></div>
+      <div><label>Brugernavn</label><input id="uUsername" placeholder="fx pbo" /></div>
       <div><label>Kode (PIN)</label><input id="uCode" placeholder="1234" inputmode="numeric" pattern="[0-9]*" /></div>
-      <div class="actions" style="align-items:end">
-        <button class="primary" id="addUser">Tilføj / Opdatér</button>
-        <button id="clearInputs">Ryd</button>
-      </div>
+    </div>
+    <div class="actions" style="margin-top:10px">
+      <button class="primary" id="addUser">Tilføj / Opdatér</button>
+      <button id="clearInputs">Ryd</button>
     </div>
 
     <div class="tableWrap">
       <table class="table">
-        <thead><tr><th>Navn</th><th>Kode</th><th>Aktiv</th><th>Handling</th></tr></thead>
+        <thead><tr><th>Navn</th><th>Brugernavn</th><th>Kode</th><th>Aktiv</th><th>Handling</th></tr></thead>
         <tbody id="usersTable"></tbody>
       </table>
     </div>
@@ -103,64 +109,59 @@
 
 <script>
 (() => {
-  const ADMIN_CODE = '0705'; // fastlåst
-  const LS_ADMIN = 'ds_admin_v2';
-  const LS_USERS = 'ds_users_v1';
+  const ADMIN_CODE = '0705';
+  const LS_ADMIN = 'ak_admin_v3';
+  const LS_USERS = 'ak_users_v2';
 
   const $ = s => document.querySelector(s);
-
   const getCfg = () => JSON.parse(localStorage.getItem(LS_ADMIN) || '{}');
   const setCfg = v => localStorage.setItem(LS_ADMIN, JSON.stringify(v));
   const getUsers = () => JSON.parse(localStorage.getItem(LS_USERS) || '[]');
   const setUsers = v => localStorage.setItem(LS_USERS, JSON.stringify(v));
 
-  // unlock
-  $('#adminUnlock').addEventListener('click', () => {
-    if (($('#adminPin').value || '').trim() === ADMIN_CODE) {
-      $('#adminLock').style.display = 'none';
-      $('#panel').style.display = '';
-      $('#usersCard').style.display = '';
+  $('#adminUnlock').onclick = () => {
+    if (($('#adminPin').value||'').trim() === ADMIN_CODE) {
+      $('#adminLock').style.display='none';
+      $('#panel').style.display='';
+      $('#usersCard').style.display='';
       load();
-    } else {
-      $('#adminMsg').textContent = 'Forkert kode.'; $('#adminMsg').style.display='block';
-    }
-  });
+    } else { $('#adminMsg').textContent='Forkert kode.'; $('#adminMsg').style.display='block'; }
+  };
 
   function load(){
-    const c = getCfg();
+    const c=getCfg();
     $('#appTitle').textContent = c.appName || 'Admin';
     $('#appName').value = c.appName || 'Bredsgaard Arbejdskort';
-    $('#emails').value = c.emails || 'vaerksted@bredsgaard.dk';
+    $('#emails').value = c.emails || 'pb@bredsgaard.dk';
     $('#subjectPrefix').value = c.subjectPrefix || 'Arbejdskort';
     $('#footer').value = c.footer || 'Ref.: {dato} – {medarbejder}';
     $('#retentionDays').value = c.retentionDays || 7;
-    document.querySelectorAll('.req').forEach(cb=>{
-      cb.checked = (c.requiredFields||[]).includes(cb.value);
-    });
+    document.querySelectorAll('.req').forEach(cb => cb.checked = (c.requiredFields||[]).includes(cb.value));
     renderUsers();
   }
 
-  $('#saveCfg').addEventListener('click', () => {
+  $('#saveCfg').onclick = () => {
     const required = [...document.querySelectorAll('.req')].filter(cb=>cb.checked).map(cb=>cb.value);
     setCfg({
       appName: $('#appName').value.trim(),
       emails: $('#emails').value.trim(),
       subjectPrefix: $('#subjectPrefix').value.trim() || 'Arbejdskort',
       footer: $('#footer').value,
-      retentionDays: Math.max(1, parseInt($('#retentionDays').value || '7', 10)),
+      retentionDays: Math.max(1, parseInt($('#retentionDays').value||'7',10)),
       requiredFields: required
     });
     alert('Indstillinger gemt.');
-  });
+  };
 
-  $('#resetCfg').addEventListener('click', ()=>{ localStorage.removeItem(LS_ADMIN); load(); });
+  $('#resetCfg').onclick = () => { localStorage.removeItem(LS_ADMIN); load(); };
 
   function renderUsers(){
     const tbody = $('#usersTable'); tbody.innerHTML='';
     getUsers().forEach((u,i)=>{
-      const tr = document.createElement('tr');
+      const tr=document.createElement('tr');
       tr.innerHTML = `
-        <td>${u.name}</td><td>${u.code}</td><td>${u.active!==false?'Ja':'Nej'}</td>
+        <td>${u.name}</td><td>${u.username}</td><td>${u.code}</td>
+        <td>${u.active!==false?'Ja':'Nej'}</td>
         <td class="actions-inline">
           <button data-i="${i}" class="edit">Redigér</button>
           <button data-i="${i}" class="toggle">${u.active!==false?'Deaktivér':'Aktivér'}</button>
@@ -169,7 +170,8 @@
       tbody.appendChild(tr);
     });
     tbody.querySelectorAll('.edit').forEach(b=>b.onclick=e=>{
-      const u=getUsers()[+e.target.dataset.i]; $('#uName').value=u.name; $('#uCode').value=u.code;
+      const u=getUsers()[+e.target.dataset.i];
+      $('#uName').value=u.name; $('#uUsername').value=u.username; $('#uCode').value=u.code;
     });
     tbody.querySelectorAll('.toggle').forEach(b=>b.onclick=e=>{
       const i=+e.target.dataset.i; const arr=getUsers(); arr[i].active=!(arr[i].active!==false); setUsers(arr); renderUsers();
@@ -179,15 +181,16 @@
     });
   }
 
-  $('#addUser').addEventListener('click', ()=>{
-    const name=$('#uName').value.trim(), code=$('#uCode').value.trim();
-    if(!name||!code) return alert('Udfyld navn og kode');
-    const arr=getUsers(); const idx=arr.findIndex(u=>u.name.toLowerCase()===name.toLowerCase());
-    const payload={name, code, active:true}; if(idx>=0) arr[idx]=payload; else arr.push(payload);
+  $('#addUser').onclick = () => {
+    const name=$('#uName').value.trim(), username=$('#uUsername').value.trim(), code=$('#uCode').value.trim();
+    if(!name||!username||!code) return alert('Udfyld navn, brugernavn og kode');
+    const arr=getUsers(); const i=arr.findIndex(u=>u.username.toLowerCase()===username.toLowerCase());
+    const payload={name, username, code, active:true}; if(i>=0) arr[i]=payload; else arr.push(payload);
     setUsers(arr); renderUsers(); alert('Bruger gemt.');
-  });
-  $('#clearInputs').addEventListener('click', ()=>{ $('#uName').value=''; $('#uCode').value=''; });
+  };
+  $('#clearInputs').onclick = ()=>{ $('#uName').value=''; $('#uUsername').value=''; $('#uCode').value=''; };
 })();
 </script>
 </body>
 </html>
+
