@@ -166,5 +166,178 @@
     purgeOldDrafts();
     $('#who').textContent = u.name;
     $('#lock').style.display='none';
-    $('#form')
+    $('#form').style.display='none';
+    $('#dash').style.display='';
+
+    // render cards
+    const list = cardsForUser(u);
+    const box = $('#cards'); box.innerHTML='';
+    if(list.length===0){ box.innerHTML='<p class="hint">Ingen kort endnu. Tryk “Nyt kort”.</p>'; }
+    list.forEach(c=>{
+      const div=document.createElement('div');
+      div.className='card';
+      const f=c.fields||{};
+      div.innerHTML = `
+        <div class="bar-between">
+          <div><strong>${f.customer||'(uden kunde)'}</strong> · ${f.date||''} · <span class="${c.status==='sent'?'':'hint'}">${c.status==='sent'?'Sendt':'Udkast'}</span></div>
+          <div class="actions-inline">
+            <button data-id="${c.id}" class="open">Åbn</button>
+            <button data-id="${c.id}" class="del danger">Slet</button>
+          </div>
+        </div>`;
+      box.appendChild(div);
+    });
+    box.querySelectorAll('.open').forEach(b=>b.onclick=e=>openCard(e.target.dataset.id));
+    box.querySelectorAll('.del').forEach(b=>b.onclick=e=>{
+      const id=e.target.dataset.id;
+      if(confirm('Slet dette kort?')){ setCards(allCards().filter(c=>c.id!==id)); showDash(); }
+    });
+  }
+
+  $('#newCard').onclick = () => {
+    currentId = uid();
+    loadForm({date: today(), name: activeUser().name}, true);
+  };
+  $('#logout').onclick = () => { localStorage.removeItem(LS_ACTIVE); location.reload(); };
+
+  // FORM
+  let currentId = null;
+  function openCard(id){
+    const c = allCards().find(x=>x.id===id);
+    currentId = id;
+    loadForm(c?.fields || {}, false, c?.status==='sent');
+  }
+  function loadForm(fields, isNew=false, readOnly=false){
+    $('#dash').style.display='none';
+    $('#form').style.display='';
+    $('#cardIdShort').textContent = (isNew?'NYT':currentId.slice(0,6).toUpperCase());
+    // fill
+    $('#date').value = fields.date || today();
+    $('#name').value = fields.name || activeUser().name;
+    $('#customer').value = fields.customer || '';
+    $('#location').value = fields.location || '';
+    $('#machine').value = fields.machine || '';
+    $('#work').value = fields.work || '';
+    $('#fault').value = fields.fault || '';
+    $('#done').value = fields.done || '';
+    $('#hours').value = fields.hours ?? 0;
+    $('#mhours').value = fields.mhours ?? 0;
+    $('#km').value = fields.km ?? 0;
+    $('#note').value = fields.note || '';
+
+    // readonly hvis sendt
+    [...document.querySelectorAll('#form input, #form textarea')].forEach(el=>el.disabled = readOnly && el.id!=='print' );
+  }
+
+  function gather(){
+    return {
+      date: $('#date').value,
+      name: $('#name').value.trim(),
+      customer: $('#customer').value.trim(),
+      location: $('#location').value.trim(),
+      machine: $('#machine').value.trim(),
+      work: $('#work').value.trim(),
+      fault: $('#fault').value.trim(),
+      done: $('#done').value.trim(),
+      hours: $('#hours').value || '0',
+      mhours: $('#mhours').value || '0',
+      km: $('#km').value || '0',
+      note: $('#note').value.trim()
+    };
+  }
+
+  function upsertCard(status='draft'){
+    const u = activeUser(); if(!u) return;
+    const all = allCards();
+    const now = new Date().toISOString();
+    const fields = gather();
+
+    const idx = all.findIndex(c=>c.id===currentId);
+    const payload = { id: currentId || uid(), user: u.name, createdAt: idx>=0?all[idx].createdAt: now, updatedAt: now, status, fields };
+    if(idx>=0) all[idx]=payload; else all.push(payload);
+    setCards(all);
+  }
+
+  $('#save').onclick = () => { upsertCard('draft'); alert('Kort gemt.'); };
+  $('#backToDash').onclick = () => { upsertCard('draft'); showDash(); };
+  $('#print').onclick = () => window.print();
+
+  // validering baseret på admin "requiredFields"
+  function requiredOk(){
+    const r = cfg().requiredFields || [];
+    const f = gather();
+    for(const key of r){
+      if(!String(f[key]??'').trim()){ alert('Manglende felt: '+key); return false; }
+    }
+    return true;
+  }
+
+  // mail
+  function buildMail(fields){
+    const c = cfg();
+    const to = (c.emails || 'vaerksted@bredsgaard.dk').replace(/\s+/g,'');
+    const subj = `${c.subjectPrefix || 'Arbejdskort'} – ${fields.date} – ${fields.name} – ${fields.customer||''}`;
+    const footer = (c.footer || 'Ref.: {dato} – {medarbejder}')
+      .replace('{dato}', fields.date).replace('{medarbejder}', fields.name);
+    const body = `
+Medarbejder: ${fields.name}
+Dato: ${fields.date}
+
+Kunde: ${fields.customer}
+Lokation: ${fields.location}
+Maskine: ${fields.machine}
+
+Arbejdet art:
+${fields.work}
+
+Fejlbeskrivelse:
+${fields.fault}
+
+Udført arbejde:
+${fields.done}
+
+Tider/forbrug:
+- Normal: ${fields.hours} t
+- Maskin: ${fields.mhours} t
+- Kørsel: ${fields.km} km
+
+Noter:
+${fields.note}
+
+${footer}`.trim();
+    return `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
+  }
+
+  $('#form').addEventListener('submit', e => {
+    e.preventDefault();
+    // standard HTML5 krav
+    if (!$('#form').reportValidity()) return;
+    // admin-krav
+    if (!requiredOk()) return;
+
+    // gem og markér sendt
+    upsertCard('sent');
+
+    // åbn e-mail
+    const url = buildMail(gather());
+    window.location.href = url;
+
+    // efter lidt tid → tilbage til oversigt
+    setTimeout(()=>{ showDash(); }, 300);
+  });
+
+  // billeder preview (kun visuelt)
+  $('#images').addEventListener('change', () => {
+    const box=$('#preview'); box.innerHTML=''; [...$('#images').files].slice(0,5).forEach(f=>{
+      const img=document.createElement('img'); img.src=URL.createObjectURL(f); img.alt=f.name; box.appendChild(img);
+    });
+  });
+
+  // init
+  const u=activeUser(); if(u) showDash();
+})();
+</script>
+</body>
+</html>
+
 
