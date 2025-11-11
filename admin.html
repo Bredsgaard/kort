@@ -12,17 +12,29 @@
     <img src="img/logo.png" alt="" onerror="this.style.display='none'">
     <h1 id="appTitle">Admin</h1>
   </div>
-  <nav><a href="index.html">Arbejdskort</a></nav>
+  <nav class="actions-inline">
+    <a class="link" href="index.html">Nyt arbejdskort</a>
+    <a class="link" href="history.html">Tidligere</a>
+  </nav>
 </header>
 
 <main>
-  <!-- ADMIN LOCK -->
+  <!-- ADMIN LOCK med brugernavn + kode -->
   <section id="adminLock" class="card" autocomplete="off">
     <h2>Admin adgang</h2>
-    <label>Admin-kode</label>
-    <input type="password" id="adminPin" inputmode="numeric" pattern="[0-9]*"
-           placeholder="••••" autocomplete="new-password" autocapitalize="off"
-           autocorrect="off" spellcheck="false" />
+    <div class="grid-2">
+      <div>
+        <label>Admin-brugernavn</label>
+        <input id="adminUser" placeholder="Bonde"
+               autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false" />
+      </div>
+      <div>
+        <label>Admin-kode</label>
+        <input type="password" id="adminPin" inputmode="numeric" pattern="[0-9]*"
+               placeholder="••••" autocomplete="new-password" autocapitalize="off"
+               autocorrect="off" spellcheck="false" />
+      </div>
+    </div>
     <div class="actions">
       <button class="primary" id="adminUnlock">Lås op</button>
     </div>
@@ -122,7 +134,7 @@
       <input type="file" id="importCardsFile" accept="application/json" style="display:none">
       <button id="importCards" class="secondary">Import Arbejdskort</button>
     </div>
-    <p class="hint">Tip: Brug export/import for at kopiere data til en anden browser eller profil. Incognito gemmer ikke data.</p>
+    <p class="hint">Incognito har sit eget lager – brug export/import for at flytte data.</p>
   </section>
 </main>
 
@@ -146,8 +158,7 @@
   const setCards = v  => localStorage.setItem(LS_CARDS, JSON.stringify(v));
 
   document.addEventListener('DOMContentLoaded', () => {
-    const pin = $('#adminPin');
-    if (pin) { pin.value=''; pin.form && (pin.form.autocomplete='off'); }
+    const pin = $('#adminPin'); if (pin) { pin.value=''; pin.form && (pin.form.autocomplete='off'); }
   });
 
   function ensureAdminUser(){
@@ -156,21 +167,21 @@
     if (i < 0) {
       arr.push({ name: 'Admin', username: ADMIN_USERNAME, code: ADMIN_CODE, active: true, system: true });
       setUsers(arr);
-    } else {
-      arr[i].active = true; arr[i].system = true;
-      setUsers(arr);
-    }
+    } else { arr[i].active = true; arr[i].system = true; setUsers(arr); }
   }
   ensureAdminUser();
 
+  // Admin unlock: kræver korrekt brugernavn + kode
   $('#adminUnlock').onclick = () => {
-    if (($('#adminPin').value||'').trim() === ADMIN_CODE) {
+    const un = ($('#adminUser').value||'').trim().toLowerCase();
+    const pin = ($('#adminPin').value||'').trim();
+    if (un === ADMIN_USERNAME.toLowerCase() && pin === ADMIN_CODE) {
       $('#adminLock').style.display='none';
       $('#panel').style.display='';
       $('#usersCard').style.display='';
       load();
     } else {
-      $('#adminMsg').textContent='Forkert kode.'; $('#adminMsg').style.display='block';
+      $('#adminMsg').textContent='Forkert admin-brugernavn eller kode.'; $('#adminMsg').style.display='block';
     }
   };
 
@@ -262,40 +273,32 @@
 
   $('#clearInputs').onclick = ()=>{ $('#uName').value=''; $('#uUsername').value=''; $('#uCode').value=''; };
 
-  // ---- Export / Import ----
+  // Export / Import
   function download(filename, obj){
     const blob = new Blob([JSON.stringify(obj,null,2)], {type:'application/json'});
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click();
     URL.revokeObjectURL(a.href);
   }
-
-  $('#exportUsers').onclick = ()=>{
-    download('arbejdskort_users_settings.json', { settings: getCfg(), users: getUsers() });
-  };
-  $('#exportCards').onclick = ()=>{
-    download('arbejdskort_cards.json', getCards());
-  };
+  $('#exportUsers').onclick = ()=>download('arbejdskort_users_settings.json', { settings:getCfg(), users:getUsers() });
+  $('#exportCards').onclick = ()=>download('arbejdskort_cards.json', getCards());
 
   $('#importUsers').onclick = ()=> $('#importUsersFile').click();
   $('#importUsersFile').addEventListener('change', async (e)=>{
-    const file = e.target.files[0]; if(!file) return;
-    const text = await file.text();
+    const f = e.target.files[0]; if(!f) return;
     try{
-      const data = JSON.parse(text);
-      if (data.settings) setCfg(data.settings);
-      if (data.users) setUsers(data.users);
-      alert('Brugere og indstillinger er importeret.');
-      load();
+      const d = JSON.parse(await f.text());
+      if (d.settings) setCfg(d.settings);
+      if (d.users) setUsers(d.users);
+      alert('Brugere og indstillinger er importeret.'); load();
     } catch { alert('Kunne ikke importere filen.'); }
     e.target.value='';
   });
 
   $('#importCards').onclick = ()=> $('#importCardsFile').click();
   $('#importCardsFile').addEventListener('change', async (e)=>{
-    const file = e.target.files[0]; if(!file) return;
-    const text = await file.text();
+    const f = e.target.files[0]; if(!f) return;
     try{
-      const arr = JSON.parse(text);
+      const arr = JSON.parse(await f.text());
       if (Array.isArray(arr)) { setCards(arr); alert('Arbejdskort importeret.'); }
       else alert('Filen indeholder ikke gyldige kort.');
     } catch { alert('Kunne ikke importere filen.'); }
@@ -305,4 +308,3 @@
 </script>
 </body>
 </html>
-
