@@ -10,23 +10,23 @@
   <script src="./api/settings.js"></script>
 </head>
 <body>
-  <div class="header" style="background:#166a2e;color:#fff;">
+  <div class="header header--brand">
     <h1 id="apptitle">Arbejdskort – Admin</h1>
     <div class="nav">
-      <a class="button ghost" href="./index.html" style="color:#fff;">Medarbejder</a>
-      <button id="logoutBtn" class="button ghost" style="color:#fff;">Log ud</button>
+      <a class="button ghost" href="./index.html">Medarbejder</a>
+      <button id="logoutBtn" class="button ghost">Log ud</button>
     </div>
   </div>
 
   <div class="container">
-    <div id="login" class="card" style="max-width:640px;margin:auto;">
+    <div id="login" class="card card--center">
       <h3>Admin-login</h3>
       <div class="grid">
         <div class="field half"><label>Brugernavn</label><input id="u" class="input" placeholder="fx Bonde"></div>
         <div class="field half"><label>Kode</label><input id="p" class="input" type="password" placeholder="****"></div>
       </div>
       <div style="margin-top:12px;"><button id="loginBtn" class="button primary">Log ind</button></div>
-      <small class="hint">Standard admin-kode: 0705</small>
+      <small class="hint">Standard kode: 0705 (kan ændres i backend i næste fase).</small>
     </div>
 
     <div id="adminUI" style="display:none;"></div>
@@ -47,7 +47,19 @@ document.querySelector('#loginBtn').onclick=async()=>{
 };
 
 document.querySelector('#logoutBtn').onclick=logout;
+
+// Prefill brugernavn via ?u=Bonde (valgfrit)
+(function(){
+  const params = new URLSearchParams(location.search);
+  const u = params.get('u');
+  if (u) {
+    const un = document.getElementById('u'); if (un) un.value = u;
+    const pw = document.getElementById('p'); if (pw) pw.focus();
+    history.replaceState({}, document.title, location.pathname);
+  }
+})();
 </script>
 </body>
 </html>
+
 
