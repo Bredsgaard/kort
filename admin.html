@@ -17,10 +17,20 @@
 
 <main>
   <!-- ADMIN LOCK -->
-  <section id="adminLock" class="card">
+  <section id="adminLock" class="card" autocomplete="off">
     <h2>Admin adgang</h2>
     <label>Admin-kode</label>
-    <input type="password" id="adminPin" inputmode="numeric" pattern="[0-9]*" placeholder="0705" />
+    <input
+      type="password"
+      id="adminPin"
+      inputmode="numeric"
+      pattern="[0-9]*"
+      placeholder="••••"
+      autocomplete="new-password"
+      autocapitalize="off"
+      autocorrect="off"
+      spellcheck="false"
+    />
     <div class="actions">
       <button class="primary" id="adminUnlock">Lås op</button>
     </div>
@@ -28,7 +38,7 @@
   </section>
 
   <!-- INDSTILLINGER -->
-  <section id="panel" class="card" style="display:none">
+  <section id="panel" class="card" style="display:none" autocomplete="off">
     <h2>Indstillinger</h2>
 
     <label>App-navn (vises i toppen)</label>
@@ -83,13 +93,26 @@
     </div>
   </section>
 
-  <!-- BRUGERE -->
-  <section id="usersCard" class="card" style="display:none">
+  <!-- BRUGERE (koder vises aldrig) -->
+  <section id="usersCard" class="card" style="display:none" autocomplete="off">
     <h2>Brugere</h2>
     <div class="grid-3">
       <div><label>Navn</label><input id="uName" placeholder="Fx Per Bonde" /></div>
-      <div><label>Brugernavn</label><input id="uUsername" placeholder="fx pbo" /></div>
-      <div><label>Ny kode (valgfri ved redigering)</label><input type="password" id="uCode" placeholder="••••" inputmode="numeric" pattern="[0-9]*" /></div>
+      <div><label>Brugernavn</label><input id="uUsername" placeholder="fx pbo" autocapitalize="off" /></div>
+      <div>
+        <label>Ny kode (valgfri ved redigering)</label>
+        <input
+          type="password"
+          id="uCode"
+          placeholder="••••"
+          inputmode="numeric"
+          pattern="[0-9]*"
+          autocomplete="new-password"
+          autocapitalize="off"
+          autocorrect="off"
+          spellcheck="false"
+        />
+      </div>
     </div>
     <div class="actions" style="margin-top:10px">
       <button class="primary" id="addUser">Tilføj / Opdatér</button>
@@ -109,7 +132,11 @@
 
 <script>
 (() => {
+  // fast admin
   const ADMIN_CODE = '0705';
+  const ADMIN_USERNAME = 'Bonde';
+
+  // storage keys
   const LS_ADMIN = 'ak_admin_v3';
   const LS_USERS = 'ak_users_v2';
 
@@ -119,17 +146,41 @@
   const getUsers = () => JSON.parse(localStorage.getItem(LS_USERS) || '[]');
   const setUsers = v => localStorage.setItem(LS_USERS, JSON.stringify(v));
 
-  // --- Admin unlock ---
+  // Ryd evt. autofyld ved load
+  document.addEventListener('DOMContentLoaded', () => {
+    const pin = document.getElementById('adminPin');
+    if (pin) { pin.value = ''; pin.form && (pin.form.autocomplete = 'off'); }
+  });
+
+  // Sørg for, at admin-bruger findes (kan ikke slettes)
+  function ensureAdminUser(){
+    const arr = getUsers();
+    const i = arr.findIndex(u => (u.username||'').toLowerCase() === ADMIN_USERNAME.toLowerCase());
+    if (i < 0) {
+      arr.push({ name: 'Admin', username: ADMIN_USERNAME, code: ADMIN_CODE, active: true, system: true });
+      setUsers(arr);
+    } else {
+      // hold altid aktiv/system-flag
+      arr[i].active = true; arr[i].system = true;
+      setUsers(arr);
+    }
+  }
+  ensureAdminUser();
+
+  // Admin unlock
   $('#adminUnlock').onclick = () => {
-    if (($('#adminPin').value||'').trim() === ADMIN_CODE) {
+    const val = ($('#adminPin').value || '').trim();
+    if (val === ADMIN_CODE) {
       $('#adminLock').style.display='none';
       $('#panel').style.display='';
       $('#usersCard').style.display='';
       load();
-    } else { $('#adminMsg').textContent='Forkert kode.'; $('#adminMsg').style.display='block'; }
+    } else {
+      $('#adminMsg').textContent='Forkert kode.'; $('#adminMsg').style.display='block';
+    }
   };
 
-  // --- Load/save cfg ---
+  // Load/save cfg
   function load(){
     const c=getCfg();
     $('#appTitle').textContent = c.appName || 'Admin';
@@ -141,68 +192,80 @@
     document.querySelectorAll('.req').forEach(cb => cb.checked = (c.requiredFields||[]).includes(cb.value));
     renderUsers();
   }
+
   $('#saveCfg').onclick = () => {
     const required = [...document.querySelectorAll('.req')].filter(cb=>cb.checked).map(cb=>cb.value);
     setCfg({
       appName: $('#appName').value.trim(),
       emails: $('#emails').value.trim(),
-      subjectPrefix: $('#subjectPrefix').value.trim() || 'Arbejdskort',
+      subjectPrefix: ($('#subjectPrefix').value.trim() || 'Arbejdskort'),
       footer: $('#footer').value,
       retentionDays: Math.max(1, parseInt($('#retentionDays').value||'7',10)),
       requiredFields: required
     });
     alert('Indstillinger gemt.');
   };
+
   $('#resetCfg').onclick = () => { localStorage.removeItem(LS_ADMIN); load(); };
 
-  // --- Users (kode aldrig vist) ---
+  // Users (koder vises aldrig)
   function renderUsers(){
     const tbody = $('#usersTable'); tbody.innerHTML='';
     getUsers().forEach((u,i)=>{
+      const isAdmin = (u.username||'').toLowerCase() === ADMIN_USERNAME.toLowerCase();
       const tr=document.createElement('tr');
       tr.innerHTML = `
-        <td>${u.name}</td>
+        <td>${u.name}${isAdmin?' (admin)':''}</td>
         <td>${u.username}</td>
         <td>${u.active!==false?'Ja':'Nej'}</td>
         <td class="actions-inline">
           <button data-i="${i}" class="edit">Redigér</button>
-          <button data-i="${i}" class="toggle">${u.active!==false?'Deaktivér':'Aktivér'}</button>
-          <button data-i="${i}" class="del danger">Slet</button>
+          ${isAdmin ? '' : `<button data-i="${i}" class="toggle">${u.active!==false?'Deaktivér':'Aktivér'}</button>
+          <button data-i="${i}" class="del danger">Slet</button>`}
         </td>`;
       tbody.appendChild(tr);
     });
+
     tbody.querySelectorAll('.edit').forEach(b=>b.onclick=e=>{
       const u=getUsers()[+e.target.dataset.i];
-      $('#uName').value=u.name; $('#uUsername').value=u.username;
-      $('#uCode').value=''; // kode vises aldrig – udfyld kun hvis du vil ændre
+      $('#uName').value=u.name; $('#uUsername').value=u.username; $('#uCode').value='';
     });
+
     tbody.querySelectorAll('.toggle').forEach(b=>b.onclick=e=>{
-      const i=+e.target.dataset.i; const arr=getUsers(); arr[i].active=!(arr[i].active!==false); setUsers(arr); renderUsers();
+      const i=+e.target.dataset.i; const arr=getUsers();
+      if ((arr[i].username||'').toLowerCase() === ADMIN_USERNAME.toLowerCase()) return;
+      arr[i].active=!(arr[i].active!==false); setUsers(arr); renderUsers();
     });
+
     tbody.querySelectorAll('.del').forEach(b=>b.onclick=e=>{
-      const i=+e.target.dataset.i; const arr=getUsers(); if(confirm('Slet bruger?')){arr.splice(i,1); setUsers(arr); renderUsers();}
+      const i=+e.target.dataset.i; const arr=getUsers();
+      if ((arr[i].username||'').toLowerCase() === ADMIN_USERNAME.toLowerCase()) return;
+      if (confirm('Slet bruger?')){ arr.splice(i,1); setUsers(arr); renderUsers(); }
     });
   }
 
   $('#addUser').onclick = () => {
     const name=$('#uName').value.trim(),
           username=$('#uUsername').value.trim(),
-          newCode=$('#uCode').value.trim(); // kan være tom
+          newCode=$('#uCode').value.trim(); // tom = behold gammel
 
     if(!name||!username) return alert('Udfyld navn og brugernavn');
+
     const arr=getUsers();
-    const i=arr.findIndex(u=>u.username.toLowerCase()===username.toLowerCase());
+    const i=arr.findIndex(u=> (u.username||'').toLowerCase()===username.toLowerCase());
+
     if(i>=0){
       // opdater eksisterende – kun skift kode hvis udfyldt
       arr[i].name = name;
       arr[i].username = username;
-      if(newCode) arr[i].code = newCode;
+      if (newCode) arr[i].code = newCode;
       arr[i].active = true;
     } else {
       if(!newCode) return alert('Angiv en kode for nye brugere');
       arr.push({name, username, code:newCode, active:true});
     }
-    setUsers(arr); renderUsers(); $('#uCode').value='';
+    setUsers(arr); renderUsers();
+    $('#uCode').value=''; // vis aldrig kode efter gem
     alert('Bruger gemt.');
   };
 
@@ -211,5 +274,3 @@
 </script>
 </body>
 </html>
-
-
