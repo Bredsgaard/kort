@@ -1,2 +1,0 @@
-# kort
-gør arbejdet lettere

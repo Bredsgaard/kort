@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dagseddel – Bredsgaard</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <img src="img/logo.png" alt="" onerror="this.style.display='none'">
+    <h1>Dagseddel</h1>
+  </div>
+  <nav><a href="admin.html">Admin</a></nav>
+</header>
+
+<main>
+  <form id="form">
+    <section class="card">
+      <div class="grid-2">
+        <div>
+          <label>Dato</label>
+          <input type="date" id="date" required />
+        </div>
+        <div>
+          <label>Medarbejdernavn</label>
+          <input type="text" id="name" placeholder="Dit navn" required />
+        </div>
+      </div>
+
+      <label>Kunde / Firma</label>
+      <input type="text" id="customer" placeholder="Fx Jensen Maskinservice" />
+
+      <div class="grid-2">
+        <div>
+          <label>Lokation</label>
+          <input type="text" id="location" placeholder="Adresse/By" />
+        </div>
+        <div>
+          <label>Maskine / Model</label>
+          <input type="text" id="machine" placeholder="Fx McConnel PA6565T" />
+        </div>
+      </div>
+
+      <label>Arbejdet art <small class="hint">Tip: brug iPhone-tastaturets 🗣️</small></label>
+      <input type="text" id="work" placeholder="Fx Olie + kæde" required />
+
+      <label>Fejlbeskrivelse</label>
+      <textarea id="fault" rows="3" placeholder="Beskriv fejlen"></textarea>
+
+      <label>Udført arbejde</label>
+      <textarea id="done" rows="3" placeholder="Hvad blev lavet?"></textarea>
+
+      <div class="grid-3">
+        <div>
+          <label>Normal timer</label>
+          <input type="number" step="0.25" id="hours" value="0" />
+        </div>
+        <div>
+          <label>Maskintimer</label>
+          <input type="number" step="0.25" id="mhours" value="0" />
+        </div>
+        <div>
+          <label>Kørte km</label>
+          <input type="number" step="0.1" id="km" value="0" />
+        </div>
+      </div>
+
+      <label>Billeder (max 5)</label>
+      <input type="file" id="images" accept="image/*" multiple />
+      <div id="preview" class="preview"></div>
+
+      <label>Noter</label>
+      <textarea id="note" rows="2" placeholder="Evt. bemærkninger"></textarea>
+
+      <div class="actions">
+        <button type="button" id="save">Gem kladde</button>
+        <button type="button" id="print">Udskriv / PDF</button>
+        <button type="submit" class="primary">Send via e-mail</button>
+      </div>
+      <p class="hint">“Send” åbner Mail/Outlook via <code>mailto:</code> på iPhone.</p>
+    </section>
+  </form>
+</main>
+
+<footer>© Bredsgaard A/S</footer>
+
+<script>
+(() => {
+  const LS_FORM = 'ds_form_v1';
+  const LS_ADMIN = 'ds_admin_v1';
+  const $ = s => document.querySelector(s);
+
+  function loadDraft(){ try{return JSON.parse(localStorage.getItem(LS_FORM)||'{}')}catch{return{}} }
+  function saveDraft(v){ localStorage.setItem(LS_FORM, JSON.stringify(v)); }
+  function getAdmin(){ try{return JSON.parse(localStorage.getItem(LS_ADMIN)||'{}')}catch{return{}} }
+
+  function fill(v){
+    $('#date').value = v.date || new Date().toISOString().slice(0,10);
+    $('#name').value = v.name || '';
+    $('#customer').value = v.customer || '';
+    $('#location').value = v.location || '';
+    $('#machine').value = v.machine || '';
+    $('#work').value = v.work || '';
+    $('#fault').value = v.fault || '';
+    $('#done').value = v.done || '';
+    $('#hours').value = v.hours ?? 0;
+    $('#mhours').value = v.mhours ?? 0;
+    $('#km').value = v.km ?? 0;
+    $('#note').value = v.note || '';
+  }
+
+  function gather(){
+    return {
+      date: $('#date').value,
+      name: $('#name').value.trim(),
+      customer: $('#customer').value.trim(),
+      location: $('#location').value.trim(),
+      machine: $('#machine').value.trim(),
+      work: $('#work').value.trim(),
+      fault: $('#fault').value.trim(),
+      done: $('#done').value.trim(),
+      hours: $('#hours').value || '0',
+      mhours: $('#mhours').value || '0',
+      km: $('#km').value || '0',
+      note: $('#note').value.trim()
+    };
+  }
+
+  function buildMail(vals){
+    const admin = getAdmin();
+    const to = (admin.emails || 'vaerksted@bredsgaard.dk').replace(/\s+/g,'');
+    const subjectPrefix = admin.subjectPrefix || 'Dagseddel';
+    const subject = `${subjectPrefix} – ${vals.date} – ${vals.name} – ${vals.customer || ''}`;
+    const footer = (admin.footer || 'Ref.: {dato} – {medarbejder}')
+      .replace('{dato}', vals.date).replace('{medarbejder}', vals.name);
+
+    const body = `
+Medarbejder: ${vals.name}
+Dato: ${vals.date}
+
+Kunde: ${vals.customer}
+Lokation: ${vals.location}
+Maskine: ${vals.machine}
+
+Arbejdet art:
+${vals.work}
+
+Fejlbeskrivelse:
+${vals.fault}
+
+Udført arbejde:
+${vals.done}
+
+Tider/forbrug:
+- Normal: ${vals.hours} t
+- Maskin: ${vals.mhours} t
+- Kørsel: ${vals.km} km
+
+Noter:
+${vals.note}
+
+${footer}`.trim();
+
+    return `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  }
+
+  // init
+  fill(loadDraft());
+  $('#save').addEventListener('click', () => { saveDraft(gather()); alert('Kladde gemt på denne enhed.'); });
+  $('#print').addEventListener('click', () => window.print());
+
+  // billeder preview
+  const input = document.getElementById('images');
+  const preview = document.getElementById('preview');
+  input.addEventListener('change', () => {
+    preview.innerHTML = '';
+    [...input.files].slice(0,5).forEach(f => {
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(f); img.alt = f.name;
+      preview.appendChild(img);
+    });
+  });
+
+  // submit → mailto
+  document.getElementById('form').addEventListener('submit', e => {
+    e.preventDefault();
+    const vals = gather();
+    if (!vals.name || !vals.work) { alert('Udfyld mindst Medarbejdernavn og Arbejdet art.'); return; }
+    saveDraft(vals);
+    window.location.href = buildMail(vals);
+  });
+})();
+</script>
+</body>
+</html>
