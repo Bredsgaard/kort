@@ -1,153 +1,140 @@
-// api/cards.js – v2
+// api/cards.js – v2 (tilføjet: Send via e-mail med krav)
 
 function getSettings(){ return load(AK_KEYS.settings, defaultSettings); }
 function getCards(){ return load(AK_KEYS.cards, []); }
 function putCards(list){ save(AK_KEYS.cards, list); }
 
-// Opret et tomt arbejdskort
 function blankCard(){
   return {
     id: crypto.randomUUID(),
     userId: getSession()?.userId || null,
     date: yyyymmdd(new Date()),
-    maskinNr: "",
-    maskintimer: "",
-    km: "",
-    svejsningTimer: "",
-    elektroder: "",
-    diesel: "",
-    normalTimer: "",
-    overtimer: "",
-    arbejdetsArt: "",
-    beskrivelse: "",
-    consumables: [],
-    images: [],
-    status: "draft", // draft | sent
-    createdAt: Date.now(),
-    updatedAt: Date.now()
+    maskinNr:"", maskintimer:"", km:"", svejsningTimer:"", elektroder:"",
+    diesel:"", normalTimer:"", overtimer:"",
+    arbejdetsArt:"", beskrivelse:"",
+    consumables:[], images:[],
+    status:"draft",
+    createdAt: Date.now(), updatedAt: Date.now()
   };
 }
 
-// Tjek om alle krævede felter er udfyldt
 function requiredOk(card){
   const s = getSettings();
+  // "Arbejdet art" er altid påkrævet
   if(!card.arbejdetsArt) return false;
   const req = new Set(s.requiredFields || []);
   for(const key of req){
-    if((card[key] === undefined) || (String(card[key]).trim() === "")) return false;
+    if(card[key] === undefined || String(card[key]).trim() === "") return false;
   }
   return true;
 }
 
-// Gem eller opdater kort i LocalStorage
 function upsertCard(card){
   const cards = getCards();
-  const i = cards.findIndex(c => c.id === card.id);
-  if(i >= 0) cards[i] = card;
-  else cards.unshift(card);
+  const i = cards.findIndex(c=>c.id===card.id);
+  if(i>=0) cards[i]=card; else cards.unshift(card);
   putCards(cards);
 }
 
-// Liste medarbejderens kort (filtreret)
 function listMyCards(filter){
-  const uid = getSession()?.userId;
-  let cards = getCards().filter(c => c.userId === uid);
-  cards = cards.filter(c => isWithinLastMonth(c.date));
-  if(filter?.status && filter.status !== "all")
-    cards = cards.filter(c => c.status === filter.status);
-  if(filter?.from) cards = cards.filter(c => c.date >= filter.from);
-  if(filter?.to) cards = cards.filter(c => c.date <= filter.to);
-  return cards;
+  const uid=getSession()?.userId;
+  let xs=getCards().filter(c=>c.userId===uid).filter(c=>isWithinLastMonth(c.date));
+  if(filter?.status && filter.status!=='all') xs=xs.filter(c=>c.status===filter.status);
+  if(filter?.from) xs=xs.filter(c=>c.date>=filter.from);
+  if(filter?.to) xs=xs.filter(c=>c.date<=filter.to);
+  return xs;
 }
 
-// Forbrugsliste (olie, kabler osv.)
 function pickConsumablesUI(root, card){
   const list = getSettings().consumables || [];
-  const wrap = document.createElement("div");
+  const wrap = document.createElement('div');
   list.forEach(item=>{
-    const row = document.createElement("div");
-    row.className = "grid";
-    row.style.marginBottom = "8px";
-    row.innerHTML = `
+    const row=document.createElement('div'); row.className='grid'; row.style.marginBottom='8px';
+    row.innerHTML=`
       <div class="field third">
         <label>${item.name} (${item.unit})</label>
         <input class="input qty" type="number" min="0" step="1" placeholder="Fx 1">
       </div>`;
-    const input = row.querySelector(".qty");
-    const ex = (card.consumables||[]).find(c => c.name === item.name);
-    if(ex) input.value = ex.qty;
-    input.addEventListener("input", ()=>{
-      const qty = input.value ? Number(input.value) : "";
-      const idx = card.consumables.findIndex(c => c.name === item.name);
-      if(qty === "" || isNaN(qty) || qty === 0){
-        if(idx >= 0) card.consumables.splice(idx,1);
-      } else {
-        if(idx >= 0) card.consumables[idx].qty = qty;
-        else card.consumables.push({name:item.name, unit:item.unit, qty});
-      }
-    });
+    const input=row.querySelector('.qty');
+    const ex=(card.consumables||[]).find(c=>c.name===item.name);
+    if(ex) input.value=ex.qty;
+    input.oninput=()=>{
+      const qty=input.value?Number(input.value):"";
+      const idx=card.consumables.findIndex(c=>c.name===item.name);
+      if(qty===""||isNaN(qty)||qty===0){ if(idx>=0) card.consumables.splice(idx,1); }
+      else { if(idx>=0) card.consumables[idx].qty=qty; else card.consumables.push({name:item.name, unit:item.unit, qty}); }
+    };
     wrap.appendChild(row);
   });
   root.appendChild(wrap);
 }
 
-// Billeduploader
 function imageUploader(root, card){
-  const box = document.createElement("div");
-  box.className = "uploader";
-  box.innerHTML = `
-    <p><span class="button">+ Tilføj billede(r)</span><br>
+  const box=document.createElement('div'); box.className='uploader';
+  box.innerHTML=`<p><span class="button">+ Tilføj billede(r)</span><br>
     <small class="hint">Valgfrit. Antal: <b class="count">0</b></small></p>
     <input type="file" accept="image/*" multiple>`;
-  const input = box.querySelector("input");
-  const btn = box.querySelector(".button");
-  const count = box.querySelector(".count");
-  const strip = document.createElement("div");
-  strip.className = "thumbstrip";
-
-  btn.onclick = ()=> input.click();
-  input.onchange = async ()=>{
+  const input=box.querySelector('input'), btn=box.querySelector('.button'), count=box.querySelector('.count');
+  const strip=document.createElement('div'); strip.className='thumbstrip';
+  btn.onclick=()=>input.click();
+  input.onchange=async()=>{
     for(const f of input.files){
-      await new Promise(res=>{
-        const r = new FileReader();
-        r.onload = ()=>{ card.images.push(r.result); res(); };
-        r.readAsDataURL(f);
-      });
+      await new Promise(res=>{ const r=new FileReader(); r.onload=()=>{ card.images.push(r.result); res(); }; r.readAsDataURL(f); });
     }
-    count.textContent = String(card.images.length);
-    render();
+    count.textContent=String(card.images.length); render();
   };
-
   function render(){
-    strip.innerHTML = "";
-    card.images.forEach((src, i)=>{
-      const img = new Image();
-      img.src = src;
-      img.className = "thumb";
-      img.title = "Klik for at fjerne";
-      img.style.cursor = "pointer";
-      img.onclick = ()=>{
-        card.images.splice(i,1);
-        count.textContent = String(card.images.length);
-        render();
-      };
+    strip.innerHTML='';
+    card.images.forEach((src,i)=>{
+      const img=new Image(); img.src=src; img.className='thumb'; img.title='Klik for at fjerne'; img.style.cursor='pointer';
+      img.onclick=()=>{ card.images.splice(i,1); count.textContent=String(card.images.length); render(); };
       strip.appendChild(img);
     });
   }
   render();
-  root.appendChild(box);
-  root.appendChild(strip);
+  root.appendChild(box); root.appendChild(strip);
 }
 
-// Hovedformular til "Nyt arbejdskort"
-function buildCardForm(root){
+// Byg mailen (mailto) – åbner telefonens egen e-mail-app
+function sendMail(card){
   const s = getSettings();
-  const req = new Set(s.requiredFields || []);
-  let card = blankCard();
+  const to = s.emailRecipient || "pb@bredsgaard.dk";
 
-  const section = document.createElement("div");
-  section.className = "card";
-  section.innerHTML = `
+  // Sammensæt en letlæselig brødtekst
+  const lines = [
+    `Dato: ${card.date}`,
+    `Maskin nr: ${card.maskinNr}`,
+    `Maskintimer: ${card.maskintimer}`,
+    `Kørte km: ${card.km}`,
+    `Svejsning (timer): ${card.svejsningTimer}`,
+    `Elektroder (stk): ${card.elektroder}`,
+    `Diesel (liter): ${card.diesel}`,
+    `Normal timer: ${card.normalTimer}`,
+    `Overtimer: ${card.overtimer}`,
+    `Arbejdet art: ${card.arbejdetsArt}`,
+    `Forbrug: ${(card.consumables||[]).map(c=>`${c.name} ${c.qty||0} ${c.unit}`).join(', ') || '-'}`,
+    `Billeder: ${card.images?.length||0} (vedhæftning via mailto understøttes normalt ikke)`,
+    ``,
+    `Fejlbeskrivelse / Udført arbejde:`,
+    `${card.beskrivelse||'-'}`
+  ];
+  const subject = encodeURIComponent(`[Arbejdskort] ${card.date} – ${card.arbejdetsArt||'Uden art'} – ${card.maskinNr||''}`);
+  const body = encodeURIComponent(lines.join('\n'));
+
+  const href = `mailto:${encodeURIComponent(to)}?subject=${subject}&body=${body}`;
+  // Markér som sendt og gem, så historik viser "Sendt"
+  card.status = 'sent';
+  upsertCard(card);
+  // Åbn e-mail-klienten
+  window.location.href = href;
+}
+
+function buildCardForm(root){
+  const s=getSettings(); const req=new Set(s.requiredFields||[]);
+  let card=blankCard();
+
+  const section=document.createElement('div'); section.className='card';
+  section.innerHTML=`
     <div class="grid">
       <div class="field third"><label>Dato</label><input id="date" class="input" type="date" value="${card.date}"></div>
       <div class="field third"><label>Maskin nr</label><input id="maskinNr" class="input" type="text" placeholder="Fx serienr./intern nr"></div>
@@ -165,62 +152,39 @@ function buildCardForm(root){
         <textarea id="beskrivelse" rows="4" placeholder="Skriv beskrivelse..."></textarea></div>
     </div>`;
 
-  // Forbrug og billeder
-  const cons = document.createElement("div");
-  cons.className = "card";
-  cons.innerHTML = `<h3>Forbrug</h3>`;
-  pickConsumablesUI(cons, card);
+  const cons=document.createElement('div'); cons.className='card'; cons.innerHTML=`<h3>Forbrug</h3>`; pickConsumablesUI(cons,card);
+  const imgs=document.createElement('div'); imgs.className='card'; imgs.innerHTML=`<h3>Billeder</h3>`; imageUploader(imgs,card);
 
-  const imgs = document.createElement("div");
-  imgs.className = "card";
-  imgs.innerHTML = `<h3>Billeder</h3>`;
-  imageUploader(imgs, card);
-
-  // Knapper
-  const actions = document.createElement("div");
-  actions.className = "card";
-  actions.innerHTML = `
-    <div style="display:flex;gap:8px;justify-content:flex-end">
+  const actions=document.createElement('div'); actions.className='card';
+  actions.innerHTML=`
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
       <button id="saveDraft" class="button">Gem kladde</button>
-      <button id="saveSend" class="button primary">Gem &amp; send</button>
+      <button id="saveSend" class="button primary">Gem &amp; send (kræver alle felter)</button>
+      <button id="sendMail" class="button">Send via e-mail</button>
     </div>
-    <small class="hint">"Gem & send" kræver Arbejdet art og alle admin-krævede felter (★).</small>`;
+    <small class="hint">"Arbejdet art" er altid påkrævet. Som udgangspunkt er ALLE felter påkrævede – du kan slå fra i Admin → Krav.</small>`;
 
-  // Bind inputfelter
-  function bind(id,key){
-    const el = section.querySelector("#"+id);
-    el.oninput = ()=>{ card[key] = el.value; card.updatedAt = Date.now(); };
-  }
-  [
-    ["date","date"],["maskinNr","maskinNr"],["maskintimer","maskintimer"],["km","km"],
-    ["svejsningTimer","svejsningTimer"],["elektroder","elektroder"],["diesel","diesel"],
-    ["normalTimer","normalTimer"],["overtimer","overtimer"],["arbejdetArt","arbejdetsArt"],
-    ["beskrivelse","beskrivelse"]
-  ].forEach(([a,b])=>bind(a,b));
+  function bind(id,key){ const el=section.querySelector('#'+id); el.oninput=()=>{ card[key]=el.value; card.updatedAt=Date.now(); }; }
+  [["date","date"],["maskinNr","maskinNr"],["maskintimer","maskintimer"],["km","km"],["svejsningTimer","svejsningTimer"],["elektroder","elektroder"],["diesel","diesel"],["normalTimer","normalTimer"],["overtimer","overtimer"],["arbejdetArt","arbejdetsArt"],["beskrivelse","beskrivelse"]].forEach(([a,b])=>bind(a,b));
 
-  // Vis ★ ved kravfelter
+  // Vis ★ ved alle nuværende kravfelter
   req.forEach(key=>{
-    const el = section.querySelector("#"+key);
-    if(el){
-      const label = el.previousElementSibling;
-      if(label) label.innerHTML = label.textContent + ' <span class="req">★</span>';
-    }
+    const el = section.querySelector('#'+key);
+    if(el){ const label = el.previousElementSibling; if(label) label.innerHTML = label.textContent + ' <span class="req">★</span>'; }
   });
 
-  actions.querySelector("#saveDraft").onclick = ()=>{
-    card.status = "draft";
-    upsertCard(card);
-    alert("Kladde gemt.");
-    location.reload();
+  actions.querySelector('#saveDraft').onclick=()=>{
+    card.status='draft'; upsertCard(card); alert('Kladde gemt.'); location.reload();
   };
 
-  actions.querySelector("#saveSend").onclick = ()=>{
-    if(!requiredOk(card))
-      return alert("Udfyld Arbejdet art og alle påkrævede felter (★).");
-    card.status = "sent";
-    upsertCard(card);
-    alert("Markeret som sendt.");
-    location.reload();
+  actions.querySelector('#saveSend').onclick=()=>{
+    if(!requiredOk(card)) return alert('Udfyld alle påkrævede felter (★) inkl. Arbejdet art.');
+    card.status='sent'; upsertCard(card); alert('Markeret som sendt.'); location.reload();
+  };
+
+  actions.querySelector('#sendMail').onclick=()=>{
+    if(!requiredOk(card)) return alert('Udfyld alle påkrævede felter (★) inkl. Arbejdet art, før du kan sende e-mail.');
+    sendMail(card);
   };
 
   root.appendChild(section);
@@ -228,3 +192,4 @@ function buildCardForm(root){
   root.appendChild(imgs);
   root.appendChild(actions);
 }
+
