@@ -1,28 +1,26 @@
-// api/_util.js – v2 (alle felter som default-krav + demo m.m.)
+// api/_util.js – simpel demo/login-tilstand + standard helpers
 
 const AK_KEYS = { users:'ak_users', settings:'ak_settings', cards:'ak_cards', session:'ak_session' };
+const AK_FLAGS = { forceLogin:'ak_force_login' }; // "1" = login aktiv, ellers demo
 
 const defaultSettings = {
   appTitle:"Bredsgaard – Arbejdskort",
   emailRecipient:"pb@bredsgaard.dk",
   workTypes:["Service","Olieskift","Kædeskift"],
   consumables:[{name:"Olie",unit:"L"},{name:"Kabler",unit:"stk"},{name:"Kobling",unit:"stk"}],
-  // 🚨 Default: ALLE felter påkrævet (admin kan slå fra i "Krav før afsendelse")
-  requiredFields:[
-    "maskinNr","maskintimer","km","svejsningTimer","elektroder",
-    "diesel","normalTimer","overtimer","beskrivelse"
-  ],
+  // Standard: alle felter kræves; kan ændres i Admin → Krav
+  requiredFields:["maskinNr","maskintimer","km","svejsningTimer","elektroder","diesel","normalTimer","overtimer","beskrivelse"],
   adminUsername:"Bonde"
 };
 
 function load(k,f){try{const v=localStorage.getItem(k);return v?JSON.parse(v):structuredClone(f);}catch(_){return structuredClone(f)}}
 function save(k,v){localStorage.setItem(k,JSON.stringify(v));}
 
-async function sha256(s){
-  const e=new TextEncoder();
-  const b=await crypto.subtle.digest("SHA-256",e.encode(s));
-  return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("");
-}
+// --- Tilstand: demo vs login ---
+function isLoginForced(){ return localStorage.getItem(AK_FLAGS.forceLogin)==="1"; }
+function setLoginForced(on){ if(on){localStorage.setItem(AK_FLAGS.forceLogin,"1");} else {localStorage.removeItem(AK_FLAGS.forceLogin);} }
+
+async function sha256(s){ const e=new TextEncoder(); const b=await crypto.subtle.digest("SHA-256",e.encode(s)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join(""); }
 
 function getSession(){
   const s=load(AK_KEYS.session,null);
@@ -34,12 +32,7 @@ function getSession(){
   }
   return s;
 }
-function touchSession(){
-  const s=getSession();
-  if(!s) return;
-  s.lastActivity=Date.now();
-  save(AK_KEYS.session,s);
-}
+function touchSession(){ const s=getSession(); if(!s) return; s.lastActivity=Date.now(); save(AK_KEYS.session,s); }
 setInterval(touchSession,60*1000);
 
 function ensureDefaults(){
@@ -52,7 +45,7 @@ function ensureDefaults(){
   }
 }
 
-// Demo-session (bruges hvis du har en "Prøv demo" knap)
+// DEMO-session (bruges automatisk når login ikke er aktiveret)
 function startDemoSession(){
   const sess = {
     userId: 'demo-user',
@@ -74,13 +67,13 @@ function startDemoSession(){
       maskinNr: "DEMO-123",
       maskintimer: "100",
       km: "12",
-      svejsningTimer: "",
-      elektroder: "",
-      diesel: "",
+      svejsningTimer: "0",
+      elektroder: "0",
+      diesel: "0",
       normalTimer: "7.5",
       overtimer: "0",
       arbejdetsArt: "Service",
-      beskrivelse: "Dette er et demokort, som viser hvordan historikken ser ud.",
+      beskrivelse: "Demodata – så historik og visninger ikke er tomme.",
       consumables: [{name:"Olie",unit:"L",qty:1}],
       images: [],
       status: "sent",
@@ -91,23 +84,9 @@ function startDemoSession(){
   }
 }
 
-function logout(){
-  localStorage.removeItem(AK_KEYS.session);
-  location.href="/index.html";
-}
+function logout(){ localStorage.removeItem(AK_KEYS.session); location.href="/index.html"; }
+function yyyymmdd(d){ const z=n=>String(n).padStart(2,"0"); return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`; }
+function isWithinLastMonth(s){ const d=new Date(s), n=new Date(), f=new Date(n.getFullYear(), n.getMonth()-1, n.getDate()); return d>=f && d<=n; }
+function setHeaderTitle(e){ const s=load(AK_KEYS.settings, defaultSettings); e.textContent = s.appTitle || defaultSettings.appTitle; }
 
-function yyyymmdd(d){
-  const z=n=>String(n).padStart(2,"0");
-  return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`;
-}
-function isWithinLastMonth(s){
-  const d=new Date(s);
-  const n=new Date();
-  const f=new Date(n.getFullYear(), n.getMonth()-1, n.getDate());
-  return d>=f && d<=n;
-}
-function setHeaderTitle(e){
-  const s=load(AK_KEYS.settings, defaultSettings);
-  e.textContent = s.appTitle || defaultSettings.appTitle;
-}
 
