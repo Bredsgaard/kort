@@ -1,60 +1,75 @@
 <!doctype html>
 <html lang="da">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Bredsgaard – Arbejdskort</title>
-  <link rel="stylesheet" href="./css/style.css">
+  <link rel="stylesheet" href="./css/style.css" />
+  <style>
+    html { scroll-behavior: smooth; }
+    .anchor { position: relative; top: -70px; visibility: hidden; }
+  </style>
 </head>
 <body>
+  <!-- Header -->
   <header class="header header--brand">
     <h1>Bredsgaard – Arbejdskort</h1>
     <nav class="nav">
-      <a class="button ghost" href="./admin.html">Demo Admin</a>
+      <a class="button ghost" href="#nyt">Nyt</a>
+      <a class="button ghost" href="#historik">Tidligere</a>
+      <a class="button ghost" href="./admin.html">Admin</a>
     </nav>
   </header>
 
   <main class="container">
+    <span id="nyt" class="anchor"></span>
+    <!-- Nyt arbejdskort -->
     <section class="card">
       <h2>Nyt arbejdskort</h2>
       <div class="grid">
         <div class="field third">
           <label>Dato</label>
-          <input id="date" class="input" type="date">
+          <input id="date" class="input" type="date" />
         </div>
+
         <div class="field third">
           <label>Maskin nr <span class="req">★</span></label>
-          <input id="maskinNr" class="input" placeholder="Fx serienr./intern nr">
+          <input id="maskinNr" class="input" placeholder="Fx serienr./intern nr" />
         </div>
+
         <div class="field third">
           <label>Maskintimer <span class="req">★</span></label>
-          <input id="maskintimer" class="input" type="number" min="0" step="1" placeholder="Fx 100">
+          <input id="maskintimer" class="input" type="number" min="0" step="1" placeholder="Fx 100" />
         </div>
 
         <div class="field third">
           <label>Kørte km <span class="req">★</span></label>
-          <input id="km" class="input" type="number" min="0" step="1" placeholder="Fx 25">
+          <input id="km" class="input" type="number" min="0" step="1" placeholder="Fx 25" />
         </div>
+
         <div class="field third">
           <label>Svejsning (timer) <span class="req">★</span></label>
-          <input id="svejsningTimer" class="input" type="number" min="0" step="0.5" placeholder="Fx 1.5">
+          <input id="svejsningTimer" class="input" type="number" min="0" step="0.5" placeholder="Fx 1.5" />
         </div>
+
         <div class="field third">
           <label>Elektroder (stk) <span class="req">★</span></label>
-          <input id="elektroder" class="input" type="number" min="0" step="1" placeholder="Fx 10">
+          <input id="elektroder" class="input" type="number" min="0" step="1" placeholder="Fx 10" />
         </div>
 
         <div class="field third">
           <label>Diesel (liter) <span class="req">★</span></label>
-          <input id="diesel" class="input" type="number" min="0" step="1" placeholder="Fx 5">
+          <input id="diesel" class="input" type="number" min="0" step="1" placeholder="Fx 5" />
         </div>
+
         <div class="field third">
           <label>Normal timer <span class="req">★</span></label>
-          <input id="normalTimer" class="input" type="number" min="0" step="0.25" placeholder="Fx 7.5">
+          <input id="normalTimer" class="input" type="number" min="0" step="0.25" placeholder="Fx 7.5" />
         </div>
+
         <div class="field third">
           <label>Overtimer <span class="req">★</span></label>
-          <input id="overtimer" class="input" type="number" min="0" step="0.25" placeholder="Fx 2">
+          <input id="overtimer" class="input" type="number" min="0" step="0.25" placeholder="Fx 2" />
         </div>
 
         <div class="field full">
@@ -69,23 +84,26 @@
       </div>
     </section>
 
+    <!-- Forbrug -->
     <section class="card">
       <h3>Forbrug</h3>
       <div id="consWrap" class="grid"></div>
     </section>
 
+    <!-- Billeder -->
     <section class="card">
       <h3>Billeder (valgfrit)</h3>
       <div class="uploader">
         <p>
-          <button class="button" id="pickImg">+ Tilføj billede(r)</button><br>
+          <button class="button" id="pickImg">+ Tilføj billede(r)</button><br />
           <small class="hint">Antal: <b id="imgCount">0</b></small>
         </p>
-        <input type="file" id="imgInput" accept="image/*" multiple>
+        <input type="file" id="imgInput" accept="image/*" multiple />
       </div>
       <div id="thumbs" class="thumbstrip"></div>
     </section>
 
+    <!-- Actions -->
     <section class="card actions">
       <div class="actions__row">
         <button id="saveDraft" class="button">Gem kladde</button>
@@ -93,10 +111,13 @@
         <button id="sendEmail" class="button">Send via e-mail</button>
       </div>
       <small class="hint">
-        “Arbejdet art” er altid påkrævet. Øvrige krav styres i Demo Admin. Alt gemmes lokalt.
+        “Arbejdet art” er altid påkrævet. Øvrige krav kan ændres i Demo Admin.
+        Alt gemmes lokalt i din browser (ingen database).
       </small>
     </section>
 
+    <!-- Historik -->
+    <span id="historik" class="anchor"></span>
     <section class="card">
       <h3>Historik (seneste 30 dage)</h3>
       <table class="table" id="histTable">
@@ -109,14 +130,14 @@
   <footer class="footer">© Bredsgaard A/S</footer>
 
 <script>
-/* ——— Robust “no-db” demo ——— */
+/* ========= Enkel, selvkørende forside (LocalStorage) ========= */
 
-// SIKKER klon-utility (i stedet for structuredClone)
-function cloneDeep(v){ try{ return JSON.parse(JSON.stringify(v)); }catch(e){ return v; } }
+/* fallback-klon */
+function cloneDeep(v){ try{ return JSON.parse(JSON.stringify(v)); }catch(_){ return v; } }
 
+/* nøgler + defaults */
 const K_SETTINGS='ak_demo_settings';
 const K_CARDS='ak_demo_cards';
-
 const DEFAULTS={
   emailRecipient:'pb@bredsgaard.dk',
   workTypes:['Service','Olieskift','Kædeskift'],
@@ -124,61 +145,64 @@ const DEFAULTS={
   consumables:[{name:'Olie',unit:'L'},{name:'Kabler',unit:'stk'},{name:'Kobling',unit:'stk'}]
 };
 
+/* storage helpers */
 function load(key, fallback){
   try{ const v=localStorage.getItem(key); return v?JSON.parse(v):cloneDeep(fallback); }
-  catch(e){ return cloneDeep(fallback); }
+  catch(_){ return cloneDeep(fallback); }
 }
-function save(key, value){ localStorage.setItem(key, JSON.stringify(value)); }
+function save(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
 function ensureDefaults(){ if(!localStorage.getItem(K_SETTINGS)) save(K_SETTINGS, DEFAULTS); if(!localStorage.getItem(K_CARDS)) save(K_CARDS, []); }
-function getSettings(){ return load(K_SETTINGS, DEFAULTS); }
-function listCards(){ return load(K_CARDS, []); }
-function putCards(xs){ save(K_CARDS, xs); }
 
-function initForm(){
-  document.getElementById('date').value = new Date().toISOString().slice(0,10);
+/* setup */
+ensureDefaults();
+document.getElementById('date').value = new Date().toISOString().slice(0,10);
 
-  // Arbejdstyper
-  const s=getSettings(); const sel=document.getElementById('arbejdetArt');
-  sel.innerHTML = '<option value="">Vælg...</option>' + (s.workTypes||[]).map(w=>`<option>${w}</option>`).join('');
+/* udfyld arbejdstyper + forbrug */
+(function fillForm(){
+  const s=load(K_SETTINGS, DEFAULTS);
 
-  // Forbrug
+  const sel=document.getElementById('arbejdetArt');
+  sel.innerHTML='<option value="">Vælg...</option>'+s.workTypes.map(w=>`<option>${w}</option>`).join('');
+
   const wrap=document.getElementById('consWrap'); wrap.innerHTML='';
-  (s.consumables||[]).forEach(c=>{
+  s.consumables.forEach(c=>{
     const div=document.createElement('div'); div.className='field third';
-    div.innerHTML=`<label>${c.name} (${c.unit})</label><input data-name="${c.name}" data-unit="${c.unit}" class="input cons" type="number" min="0" step="1" placeholder="Fx 1">`;
+    div.innerHTML=`<label>${c.name} (${c.unit})</label>
+      <input class="input cons" data-name="${c.name}" data-unit="${c.unit}" type="number" min="0" step="1" placeholder="Fx 1">`;
     wrap.appendChild(div);
   });
-}
+})();
 
+/* billeder */
 const state={ images:[] };
-
-function bindImages(){
+(function bindImages(){
   const pick=document.getElementById('pickImg');
   const input=document.getElementById('imgInput');
   const count=document.getElementById('imgCount');
   const strip=document.getElementById('thumbs');
+
   pick.onclick=()=>input.click();
-  input.onchange=async ()=>{
+  input.onchange=async()=>{
     for(const f of input.files){
       await new Promise(res=>{ const r=new FileReader(); r.onload=()=>{ state.images.push(r.result); res(); }; r.readAsDataURL(f); });
     }
-    count.textContent=String(state.images.length);
-    renderThumbs();
+    count.textContent=String(state.images.length); renderThumbs();
   };
   function renderThumbs(){
     strip.innerHTML='';
     state.images.forEach((src,i)=>{
-      const img=new Image(); img.src=src; img.className='thumb'; img.style.cursor='pointer'; img.title='Klik for at fjerne';
+      const img=new Image(); img.src=src; img.className='thumb'; img.title='Klik for at fjerne'; img.style.cursor='pointer';
       img.onclick=()=>{ state.images.splice(i,1); count.textContent=String(state.images.length); renderThumbs(); };
       strip.appendChild(img);
     });
   }
-}
+})();
 
+/* helpers */
 function val(id){ return document.getElementById(id).value.trim(); }
 function buildCard(status){
   const cons=Array.from(document.querySelectorAll('.cons'))
-    .map(i=>({name:i.dataset.name,unit:i.dataset.unit,qty:Number(i.value||0)}))
+    .map(i=>({name:i.dataset.name, unit:i.dataset.unit, qty:Number(i.value||0)}))
     .filter(x=>x.qty>0);
   return {
     id: (crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random()),
@@ -186,18 +210,20 @@ function buildCard(status){
     km: val('km'), svejsningTimer: val('svejsningTimer'), elektroder: val('elektroder'),
     diesel: val('diesel'), normalTimer: val('normalTimer'), overtimer: val('overtimer'),
     arbejdetsArt: val('arbejdetArt'), beskrivelse: val('beskrivelse'),
-    consumables: cons, images: cloneDeep(state.images), status, createdAt: Date.now(), updatedAt: Date.now()
+    consumables: cons, images: cloneDeep(state.images), status,
+    createdAt: Date.now(), updatedAt: Date.now()
   };
 }
-
 function requiredOk(card){
-  const s=getSettings(); const req=new Set(s.requiredFields||[]);
+  const s=load(K_SETTINGS, DEFAULTS); const req=new Set(s.requiredFields||[]);
   if(!card.arbejdetsArt) return false;
   for(const k of req){ if(card[k]===undefined || String(card[k]).trim()==="") return false; }
   return true;
 }
-function saveCard(card){ const xs=listCards(); xs.unshift(card); putCards(xs); renderHistory(); }
 
+/* historik */
+function listCards(){ try{ return JSON.parse(localStorage.getItem(K_CARDS)||'[]'); }catch(_){ return []; } }
+function putCards(xs){ localStorage.setItem(K_CARDS, JSON.stringify(xs)); }
 function renderHistory(){
   const tb=document.querySelector('#histTable tbody'); tb.innerHTML='';
   const now=new Date(); const from=new Date(now.getFullYear(),now.getMonth(),now.getDate()-30);
@@ -208,9 +234,11 @@ function renderHistory(){
       tb.appendChild(tr);
     });
 }
+renderHistory();
 
+/* mailto */
 function sendMail(card){
-  const to=(getSettings().emailRecipient||'pb@bredsgaard.dk').trim();
+  const to=(load(K_SETTINGS, DEFAULTS).emailRecipient||'pb@bredsgaard.dk').trim();
   const lines=[
     `Dato: ${card.date}`,
     `Maskin nr: ${card.maskinNr}`,
@@ -233,18 +261,25 @@ function sendMail(card){
   location.href=`mailto:${encodeURIComponent(to)}?subject=${subject}&body=${body}`;
 }
 
-// Init
-ensureDefaults();
-initForm();
-bindImages();
-renderHistory();
-
-document.getElementById('saveDraft').onclick=()=>{ const c=buildCard('draft'); saveCard(c); alert('Kladde gemt.'); location.reload(); };
-document.getElementById('saveSend').onclick=()=>{ const c=buildCard('sent'); if(!requiredOk(c)) return alert('Udfyld alle felter (★) inkl. Arbejdet art.'); saveCard(c); alert('Markeret som sendt.'); location.reload(); };
-document.getElementById('sendEmail').onclick=()=>{ const c=buildCard('sent'); if(!requiredOk(c)) return alert('Udfyld alle felter (★) inkl. Arbejdet art.'); saveCard(c); sendMail(c); };
+/* knapper */
+document.getElementById('saveDraft').onclick=()=>{
+  const c=buildCard('draft'); const xs=listCards(); xs.unshift(c); putCards(xs);
+  alert('Kladde gemt.'); renderHistory(); window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});
+};
+document.getElementById('saveSend').onclick=()=>{
+  const c=buildCard('sent'); if(!requiredOk(c)) return alert('Udfyld alle felter (★) inkl. Arbejdet art.');
+  const xs=listCards(); xs.unshift(c); putCards(xs);
+  alert('Markeret som sendt.'); renderHistory(); window.location.hash='#historik';
+};
+document.getElementById('sendEmail').onclick=()=>{
+  const c=buildCard('sent'); if(!requiredOk(c)) return alert('Udfyld alle felter (★) inkl. Arbejdet art.');
+  const xs=listCards(); xs.unshift(c); putCards(xs);
+  sendMail(c);
+};
 </script>
 </body>
 </html>
+
 
 
 
