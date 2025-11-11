@@ -1,196 +1,48 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="da">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Arbejdskort</title>
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/api/_util.js"></script>
+  <script src="/api/login.js"></script>
+  <script src="/api/cards.js"></script>
 </head>
 <body>
-  <header class="topbar">
-    <div class="topbar-inner">
-      <div class="brand">Arbejdskort</div>
-      <nav class="nav">
-        <a href="index.html">Nyt kort</a>
-        <a href="history.html">Tidligere</a>
-        <a href="admin.html">Admin</a>
-        <span data-userchip class="userchip"></span>
-        <button id="logoutBtn" class="btn" hidden>Log ud</button>
-      </nav>
+  <div class="header">
+    <h1 id="apptitle">Bredsgaard – Arbejdskort</h1>
+    <div class="nav">
+      <a class="button" href="/history">Tidligere kort</a>
+      <a class="button" href="/admin">Admin</a>
+      <button class="button ghost" id="logoutBtn" style="display:none">Log ud</button>
     </div>
-  </header>
-
-  <main class="container">
-
-    <!-- LOGIN BLOK -->
-    <section id="login-block" class="card" hidden>
-      <h1>Log ind</h1>
+  </div>
+  <div class="container">
+    <div id="login" class="card">
+      <h3>Login (medarbejder)</h3>
       <div class="grid">
-        <div class="col-6">
-          <label>Brugernavn</label>
-          <input id="empUser" placeholder="fx bh">
-        </div>
-        <div class="col-6">
-          <label>Kode</label>
-          <input id="empPin" type="password" inputmode="numeric" placeholder="4 cifre">
-        </div>
+        <div class="field third"><label>Brugernavn</label><input id="u" class="input" placeholder="Brugernavn"></div>
+        <div class="field third"><label>Kode</label><input id="p" class="input" type="password" inputmode="numeric" pattern="[0-9]*" placeholder="Kode"></div>
+        <div class="field third" style="align-self:end"><button id="loginBtn" class="button primary">Log ind</button></div>
       </div>
-      <button id="loginBtn" class="btn primary" style="margin-top:10px;">Log ind</button>
-      <p id="loginErr" class="error" style="color:#c00;" hidden></p>
-    </section>
+      <small class="hint">Koder vises aldrig i klar tekst.</small>
+    </div>
 
-    <!-- ARBEJDSKORT BLOK -->
-    <section id="app-block" class="card" hidden>
-      <h1>Nyt arbejdskort</h1>
-      <form id="workForm" autocomplete="off">
-        <div class="grid">
-          <div class="col-6">
-            <label class="req">Dato</label>
-            <input type="date" id="date" required>
-          </div>
-          <div class="col-6">
-            <label class="req">Maskinnr.</label>
-            <input id="machineNo" placeholder="fx M-123" required>
-          </div>
+    <div id="newcard" style="display:none"></div>
+  </div>
 
-          <div class="col-4">
-            <label>Maskintimer</label>
-            <input id="machineHours" type="number" placeholder="0">
-          </div>
-          <div class="col-4">
-            <label>Kørte km</label>
-            <input id="drivenKm" type="number" placeholder="0">
-          </div>
-          <div class="col-4">
-            <label>Diesel (L)</label>
-            <input id="diesel" type="number" placeholder="0">
-          </div>
-
-          <div class="col-6">
-            <label>Svejsetimer</label>
-            <input id="weldingHours" type="number" placeholder="0">
-          </div>
-          <div class="col-6">
-            <label>Elektroder</label>
-            <input id="electrodes" type="number" placeholder="0">
-          </div>
-
-          <div class="col-6">
-            <label class="req">Normaltimer</label>
-            <input id="normalHours" type="number" placeholder="0" required>
-          </div>
-          <div class="col-6">
-            <label>Overtimer</label>
-            <input id="overtimeHours" type="number" placeholder="0">
-          </div>
-
-          <div class="col-12">
-            <label class="req">Udført arbejde</label>
-            <textarea id="description" placeholder="Beskriv kort hvad der er udført..." required></textarea>
-          </div>
-
-          <div class="col-12">
-            <label>Billeder (valgfrit)</label>
-            <div class="filebox">
-              <label class="fake" for="images">📷 Vælg billeder</label>
-              <input type="file" id="images" accept="image/*" multiple>
-              <div class="meta">Ingen filer valgt</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="actions">
-          <button type="button" id="saveBtn" class="btn ok">Gem kladde</button>
-          <button type="submit" class="btn primary">Gem og send</button>
-        </div>
-      </form>
-    </section>
-
-  </main>
-
-  <footer>© Bredsgaard – Arbejdskort system</footer>
-
-  <script type="module">
-    import { guardOrShowLogin, employeeLogin, logoutAndReload, isLoggedIn, getSessionUser } from "./js/auth.js";
-    import { addOrUpdateCard, id } from "./js/app.js";
-
-    guardOrShowLogin("login-block", "app-block");
-
-    // login
-    document.getElementById("loginBtn")?.addEventListener("click", async () => {
-      const u = document.getElementById("empUser").value;
-      const p = document.getElementById("empPin").value;
-      const err = document.getElementById("loginErr");
-      err.hidden = true;
-      try {
-        await employeeLogin(u, p);
-        guardOrShowLogin("login-block", "app-block");
-        document.getElementById("logoutBtn").hidden = !isLoggedIn();
-      } catch (e) {
-        err.textContent = e.message || "Login fejlede.";
-        err.hidden = false;
-      }
-    });
-
-    // log ud
-    document.getElementById("logoutBtn")?.addEventListener("click", logoutAndReload);
-
-    // håndter billeder
-    const imgInput = document.getElementById("images");
-    imgInput?.addEventListener("change", e => {
-      const meta = document.querySelector(".filebox .meta");
-      const count = e.target.files.length;
-      meta.textContent = count ? `${count} fil${count > 1 ? "er" : ""} valgt` : "Ingen filer valgt";
-    });
-
-    // gem arbejdskort
-    document.getElementById("workForm")?.addEventListener("submit", e => {
-      e.preventDefault();
-      const user = getSessionUser();
-      if (!user) return alert("Log ind først.");
-
-      const card = {
-        id: id(),
-        user: user.username,
-        name: user.name,
-        date: document.getElementById("date").value,
-        machineNo: document.getElementById("machineNo").value,
-        machineHours: document.getElementById("machineHours").value,
-        drivenKm: document.getElementById("drivenKm").value,
-        diesel: document.getElementById("diesel").value,
-        weldingHours: document.getElementById("weldingHours").value,
-        electrodes: document.getElementById("electrodes").value,
-        normalHours: document.getElementById("normalHours").value,
-        overtimeHours: document.getElementById("overtimeHours").value,
-        description: document.getElementById("description").value,
-        sent: true,
-        created: new Date().toISOString()
-      };
-      addOrUpdateCard(user.username, card);
-      alert("Arbejdskort gemt og markeret som sendt.");
-      e.target.reset();
-    });
-
-    // knap til at gemme kladde
-    document.getElementById("saveBtn")?.addEventListener("click", () => {
-      const user = getSessionUser();
-      if (!user) return alert("Log ind først.");
-      const card = {
-        id: id(),
-        user: user.username,
-        name: user.name,
-        date: document.getElementById("date").value,
-        machineNo: document.getElementById("machineNo").value,
-        description: document.getElementById("description").value,
-        sent: false,
-        created: new Date().toISOString()
-      };
-      addOrUpdateCard(user.username, card);
-      alert("Arbejdskort gemt som kladde.");
-    });
-  </script>
+<script>
+ensureDefaults(); setHeaderTitle(document.querySelector('#apptitle'));
+const sess=getSession(); const loginBox=document.querySelector('#login'); const newBox=document.querySelector('#newcard'); const logoutBtn=document.querySelector('#logoutBtn');
+if(sess && sess.role==='employee'){ loginBox.style.display='none'; newBox.style.display='block'; logoutBtn.style.display='inline-block'; buildCardForm(newBox); } 
+else { loginBox.style.display='block'; newBox.style.display='none'; }
+logoutBtn.onclick=logout;
+document.querySelector('#loginBtn').onclick=async()=>{ const u=document.querySelector('#u').value.trim(); const p=document.querySelector('#p').value.trim(); const s=await employeeLogin(u,p); if(!s) return alert('Forkert login.'); location.reload(); };
+</script>
 </body>
 </html>
+
 
 
 
