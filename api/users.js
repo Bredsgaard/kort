@@ -1,66 +1,54 @@
-import { kv } from '@vercel/kv';
+import { kv } from "@vercel/kv";
+import { sha256, requireAdmin, scrubUsers } from "./_util.js";
 
-async function getAdmin() {
-  const s = (await kv.get('ak:settings')) || {};
-  return {
-    adminUser: s.adminUser || 'Bonde',
-    adminPin:  s.adminPin  || '0705'
-  };
+export const config = { runtime: "edge" };
+
+async function loadUsers() {
+  return (await kv.get("users:v1")) || [];
 }
-async function adminOK(req) {
-  const { adminUser, adminPin } = await getAdmin();
-  return (req.headers['x-admin-user'] === adminUser && req.headers['x-admin-pin'] === adminPin);
+async function saveUsers(list) {
+  await kv.set("users:v1", list);
 }
 
-export default async function handler(req, res) {
-  try {
-    if (req.method === 'GET') {
-      const users = (await kv.get('ak:users')) || [];
-      return res.json(users.map(({ code, ...rest }) => rest));
-    }
-
-    if (!(await adminOK(req))) return res.status(401).json({ ok:false, error:'unauthorized' });
-
-    if (req.method === 'POST') {
-      const { name, username, code, active } = req.body || {};
-      if (!name || !username) return res.status(400).json({ ok:false, error:'missing' });
-
-      const list = (await kv.get('ak:users')) || [];
-      const uname = String(username).toLowerCase().replace(/\s+/g,'');
-      const idx = list.findIndex(u => (u.username || '').toLowerCase() === uname);
-
-      if (idx >= 0) {
-        list[idx] = { ...list[idx], name, username: uname, ...(code ? { code: String(code) } : {}), active: active !== false };
-      } else {
-        if (!code) return res.status(400).json({ ok:false, error:'need_code' });
-        list.push({ name, username: uname, code: String(code), active: true });
-      }
-      await kv.set('ak:users', list);
-      return res.json({ ok:true });
-    }
-
-    if (req.method === 'DELETE') {
-      const { username } = req.query || {};
-      if (!username) return res.status(400).json({ ok:false, error:'missing' });
-      let list = (await kv.get('ak:users')) || [];
-      list = list.filter(u => (u.username || '').toLowerCase() !== String(username).toLowerCase());
-      await kv.set('ak:users', list);
-      return res.json({ ok:true });
-    }
-
-    if (req.method === 'PATCH') {
-      const { username, active } = req.body || {};
-      if (!username) return res.status(400).json({ ok:false, error:'missing' });
-      const list = (await kv.get('ak:users')) || [];
-      const idx = list.findIndex(u => (u.username || '').toLowerCase() === String(username).toLowerCase());
-      if (idx < 0) return res.status(404).json({ ok:false });
-      list[idx].active = !!active;
-      await kv.set('ak:users', list);
-      return res.json({ ok:true });
-    }
-
-    return res.status(405).end();
-  } catch (e) {
-    return res.status(500).json({ ok:false, error:'server' });
+export default async function handler(req) {
+  if (req.method === "GET") {
+    const list = await loadUsers();
+    return new Response(JSON.stringify(scrubUsers(list)), { status: 200, headers: { "content-type": "application/json" } });
   }
+
+  const isAdmin = await requireAdmin(req);
+  if (!isAdmin) return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 });
+
+  if (req.method === "POST") {
+    const body = await req.json();
+    let { name, username, code, active } = body;
+    if (!name || !username) return new Response(JSON.stringify({ error: "missing" }), { status: 400 });
+
+    username = String(username).toLowerCase().replace(/\s+/g, "");
+    let list = await loadUsers();
+    const ix = list.findIndex(u => u.username === username);
+    if (ix === -1 && !code) return new Response(JSON.stringify({ error: "need_code" }), { status: 400 });
+
+    if (ix === -1) {
+      list.push({ name, username, active: active !== false, codeHash: sha256(code) });
+    } else {
+      list[ix].name = name;
+      if (typeof active === "boolean") list[ix].active = active;
+      if (code) list[ix].codeHash = sha256(code);
+    }
+    await saveUsers(list);
+    return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { "content-type": "application/json" } });
+  }
+
+  if (req.method === "DELETE") {
+    const { searchParams } = new URL(req.url);
+    const username = (searchParams.get("username") || "").toLowerCase();
+    if (!username) return new Response(JSON.stringify({ error: "missing" }), { status: 400 });
+    let list = await loadUsers();
+    list = list.filter(u => u.username !== username);
+    await saveUsers(list);
+    return new Response(JSON.stringify({ ok: true }), { status: 200 });
+  }
+
+  return new Response("Method Not Allowed", { status: 405 });
 }
