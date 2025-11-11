@@ -32,7 +32,7 @@
       </div>
     </div>
     <div class="actions">
-      <button class="primary" id="unlockBtn">Lås op</button>
+      <button class="primary" id="unlockBtn" type="button">Lås op</button>
     </div>
     <p id="lockMsg" class="danger" style="display:none;margin-top:8px"></p>
   </section>
@@ -46,12 +46,12 @@
           <option value="7">Seneste 7 dage</option>
           <option value="30">Seneste 30 dage</option>
         </select>
-        <button id="logout" class="secondary btn-small">Log ud</button>
+        <button id="logout" class="secondary btn-small" type="button">Log ud</button>
       </div>
     </div>
 
     <div class="actions">
-      <button id="newCard" class="primary">➕ Nyt arbejdskort</button>
+      <button id="newCard" class="primary" type="button">➕ Nyt arbejdskort</button>
     </div>
 
     <h3 style="margin-top:10px">Mine arbejdskort</h3>
@@ -150,6 +150,15 @@
         <button type="button" id="print">Udskriv / PDF</button>
         <button type="submit" class="primary">✉️ Send (markeres sendt)</button>
       </div>
+
+      <!-- valgfrit billede-upload -->
+      <div class="grid-2">
+        <div>
+          <label>Billeder (maks 5)</label>
+          <input type="file" id="images" accept="image/*" multiple />
+        </div>
+        <div id="preview" class="preview"></div>
+      </div>
     </section>
   </form>
 </main>
@@ -158,7 +167,6 @@
 
 <script>
 (() => {
-  // storage keys
   const LS_ADMIN='ak_admin_v3', LS_USERS='ak_users_v2', LS_ACTIVE='ak_active_v1', LS_CARDS='ak_cards_v2';
   const $ = s => document.querySelector(s);
   const cfg = () => JSON.parse(localStorage.getItem(LS_ADMIN)||'{}');
@@ -170,19 +178,12 @@
   const today = () => new Date().toISOString().slice(0,10);
   const uid = () => Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-4);
 
-  // Ryd loginfelter og slå autofill fra ved load
   document.addEventListener('DOMContentLoaded', () => {
-    const u = document.getElementById('loginUser');
-    const p = document.getElementById('loginPin');
+    const u = $('#loginUser'), p = $('#loginPin');
     if (u) u.value=''; if (p) p.value='';
-    const lock = document.getElementById('lock');
-    if (lock?.closest('form')) lock.closest('form').setAttribute('autocomplete','off');
+    $('#appTitle').textContent = cfg().appName || 'Arbejdskort';
   });
 
-  // title from admin
-  $('#appTitle').textContent = cfg().appName || 'Arbejdskort';
-
-  // ---- LOGIN ----
   function resetToLogin(){
     $('#lock').style.display='';
     $('#dash').style.display='none';
@@ -190,22 +191,21 @@
     $('#loginUser').value='';
     $('#loginPin').value='';
   }
+
   $('#unlockBtn').onclick = () => {
     const un=($('#loginUser').value||'').trim().toLowerCase();
     const pin=($('#loginPin').value||'').trim();
     const u = users().find(x => x.active!==false && (x.username||'').toLowerCase()===un && String(x.code)===pin);
     if(!u){ $('#lockMsg').textContent='Forkert brugernavn eller kode – eller bruger inaktiv.'; $('#lockMsg').style.display='block'; return; }
-    setActive(u);
-    showDash();
+    setActive(u); showDash();
   };
 
-  // ---- DASHBOARD ----
   function purgeOldDrafts(){
     const days = Math.max(1, parseInt(cfg().retentionDays||'7',10));
     const cutoff = Date.now() - days*24*3600*1000;
-    const pruned = allCards().filter(c => !(c.status==='draft' && new Date(c.createdAt).getTime() < cutoff));
-    setCards(pruned);
+    setCards(allCards().filter(c => !(c.status==='draft' && new Date(c.createdAt).getTime() < cutoff)));
   }
+
   function filteredCards(days){
     const u = active(); if(!u) return [];
     const cutoff = Date.now() - days*24*3600*1000;
@@ -213,16 +213,7 @@
       .filter(c => c.user===u.username && new Date(c.updatedAt).getTime() >= cutoff)
       .sort((a,b)=>new Date(b.updatedAt)-new Date(a.updatedAt));
   }
-  function showDash(){
-    const u=active();
-    if(!u){ resetToLogin(); return; }
-    purgeOldDrafts();
-    $('#who').textContent = `${u.name}`; // kun fuldt navn – ikke brugernavn
-    $('#lock').style.display='none';
-    $('#form').style.display='none';
-    $('#dash').style.display='';
-    renderList();
-  }
+
   function renderList(){
     const days = parseInt($('#rangeSel').value,10);
     const list = filteredCards(days);
@@ -247,6 +238,28 @@
       const id=e.target.dataset.id; if(confirm('Slet dette kort?')){ setCards(allCards().filter(x=>x.id!==id)); renderList(); }
     });
   }
+
+  function showDash(){
+    const u=active(); if(!u){ resetToLogin(); return; }
+    purgeOldDrafts();
+    $('#who').textContent = `${u.name}`; // viser kun navn
+    $('#lock').style.display='none'; $('#form').style.display='none'; $('#dash').style.display='';
+    renderList();
+  }
+
+  // --- Nyt arbejdskort (robust handler) ---
+  function startNewCard(){
+    currentId = uid();
+    $('#cardIdShort').textContent='NYT';
+    clearForm();
+    $('#dash').style.display='none';
+    $('#form').style.display='';
+  }
+  document.addEventListener('click', (e) => {
+    const newBtn = e.target.closest('#newCard');
+    if (newBtn) { e.preventDefault(); startNewCard(); }
+  });
+
   $('#rangeSel').onchange = renderList;
   $('#logout').onclick = () => { localStorage.removeItem(LS_ACTIVE); resetToLogin(); };
 
@@ -259,9 +272,8 @@
     $('#mhours').value=0; $('#km').value=0; $('#welding').value=0; $('#electrodes').value=0; $('#diesel').value=0;
     $('#hours').value=0; $('#overtime').value=0;
     $('#work').value=''; $('#fault').value=''; $('#done').value=''; $('#note').value='';
-    $('#preview').innerHTML='';
+    const p=document.getElementById('preview'); if(p) p.innerHTML='';
   }
-  $('#newCard').onclick = ()=>{ currentId=uid(); $('#cardIdShort').textContent='NYT'; clearForm(); $('#dash').style.display='none'; $('#form').style.display=''; };
   $('#backToDash').onclick = ()=>{ upsert('draft'); showDash(); };
   $('#print').onclick = ()=>window.print();
 
@@ -346,7 +358,7 @@ ${footer}`.trim();
   }
 
   $('#save').onclick = ()=>{ upsert('draft'); alert('Gemte som udkast.'); };
-  $('#form').addEventListener('submit', e=>{
+  document.getElementById('form').addEventListener('submit', e=>{
     e.preventDefault();
     if(!requiredOk()) return;
     upsert('sent');
@@ -354,16 +366,16 @@ ${footer}`.trim();
     setTimeout(()=>{ showDash(); },300);
   });
 
-  // image preview (valgfrit)
+  // billede preview
   const file = document.getElementById('images');
   if (file) {
     file.addEventListener('change', ()=>{
       const box=document.getElementById('preview'); if (!box) return;
-      box.innerHTML=''; [...file.files].slice(0,5).forEach(f=>{ const img=document.createElement('img'); img.src=URL.createObjectURL(f); box.appendChild(img); });
+      box.innerHTML=''; [...file.files].slice(0,5).forEach(f=>{ const img=document.createElement('img'); img.src=URL.createObjectURL(f); img.alt=f.name; box.appendChild(img); });
     });
   }
 
-  // init: altid på login
+  // init
   resetToLogin();
 })();
 </script>
