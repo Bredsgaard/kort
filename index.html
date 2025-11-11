@@ -3,38 +3,51 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Dagseddel – Bredsgaard</title>
+  <title>Arbejdskort</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
 <header class="top">
   <div class="brand">
     <img src="img/logo.png" alt="" onerror="this.style.display='none'">
-    <h1>Dagseddel</h1>
+    <h1 id="appTitle">Arbejdskort</h1>
   </div>
   <nav><a href="admin.html">Admin</a></nav>
 </header>
 
 <main>
-  <!-- LÅS / LOGIN -->
+  <!-- LOCK -->
   <section id="lock" class="card">
     <h2>Log ind med kode</h2>
-    <p class="hint">Indtast din medarbejderkode. (Admin kan ændre koder i admin)</p>
     <label>Kode</label>
     <input type="password" id="pin" inputmode="numeric" pattern="[0-9]*" placeholder="Fx 1234" required autofocus>
     <div class="actions">
       <button class="primary" id="unlockBtn">Lås op</button>
-      <button id="gotoAdmin">Admin (0705)</button>
     </div>
     <p id="lockMsg" class="danger" style="display:none;margin-top:8px"></p>
   </section>
 
-  <!-- FORMULAREN (skjult indtil låst op) -->
+  <!-- DASHBOARD -->
+  <section id="dash" class="card" style="display:none">
+    <div class="bar-between">
+      <div>Logget ind som: <strong id="who"></strong></div>
+      <button id="logout" class="secondary btn-small">Skift bruger</button>
+    </div>
+
+    <div class="actions">
+      <button id="newCard" class="primary">➕ Nyt kort</button>
+    </div>
+
+    <h3 style="margin-top:10px">Mine kort (seneste 7 dage)</h3>
+    <div id="cards"></div>
+  </section>
+
+  <!-- FORM -->
   <form id="form" style="display:none">
     <section class="card">
       <div class="bar-between">
-        <div class="who">Logget ind som: <strong id="who"></strong></div>
-        <button type="button" id="switchUser" class="secondary btn-small">Skift bruger</button>
+        <div><strong>Kort-id:</strong> <span id="cardIdShort">NYT</span></div>
+        <button type="button" id="backToDash" class="secondary btn-small">Tilbage</button>
       </div>
 
       <div class="grid-2">
@@ -94,11 +107,10 @@
       <textarea id="note" rows="2" placeholder="Evt. bemærkninger" required></textarea>
 
       <div class="actions">
-        <button type="button" id="save">Gem kladde</button>
+        <button type="button" id="save">💾 Gem</button>
         <button type="button" id="print">Udskriv / PDF</button>
-        <button type="submit" class="primary">Send via e-mail</button>
+        <button type="submit" class="primary">✉️ Send</button>
       </div>
-      <!-- (Tekstlinjen om mailto er fjernet) -->
     </section>
   </form>
 </main>
@@ -107,149 +119,52 @@
 
 <script>
 (() => {
-  const LS_FORM = 'ds_form_v1';
-  const LS_ADMIN = 'ds_admin_v1';
+  // keys
+  const LS_ADMIN = 'ds_admin_v2';
   const LS_USERS = 'ds_users_v1';
-  const LS_ACTIVE_USER = 'ds_active_user_v1';
+  const LS_ACTIVE = 'ds_active_user_v1';
+  const LS_CARDS = 'ds_cards_v1'; // [{id,user,createdAt,updatedAt,status:'draft'|'sent',fields:{...}}]
 
+  // utils
   const $ = s => document.querySelector(s);
-  const nowDate = () => new Date().toISOString().slice(0,10);
+  const today = () => new Date().toISOString().slice(0,10);
+  const uid = () => Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-4);
+  const cfg = () => JSON.parse(localStorage.getItem(LS_ADMIN)||'{}');
+  const users = () => JSON.parse(localStorage.getItem(LS_USERS)||'[]');
+  const activeUser = () => JSON.parse(localStorage.getItem(LS_ACTIVE)||'null');
+  const setActiveUser = u => localStorage.setItem(LS_ACTIVE, JSON.stringify(u));
+  const allCards = () => JSON.parse(localStorage.getItem(LS_CARDS)||'[]');
+  const setCards = arr => localStorage.setItem(LS_CARDS, JSON.stringify(arr));
 
-  // Users / admin config
-  const getUsers = () => { try{return JSON.parse(localStorage.getItem(LS_USERS)||'[]')}catch{return[]} };
-  const getAdminCfg = () => { try{return JSON.parse(localStorage.getItem(LS_ADMIN)||'{}')}catch{return{}} };
-  const setActiveUser = u => localStorage.setItem(LS_ACTIVE_USER, JSON.stringify(u));
-  const getActiveUser = () => { try{return JSON.parse(localStorage.getItem(LS_ACTIVE_USER)||'null')}catch{return null} };
+  // header title
+  $('#appTitle').textContent = (cfg().appName || 'Arbejdskort');
 
-  // Lock
-  function tryUnlock(){
-    const pin = $('#pin').value.trim();
-    if (!pin) { $('#lockMsg').textContent = 'Indtast kode.'; $('#lockMsg').style.display='block'; return; }
+  // LOCK
+  $('#unlockBtn').onclick = () => {
+    const pin = ($('#pin').value||'').trim();
+    const list = users().filter(u=>u.active!==false);
+    const u = list.find(x=>String(x.code)===pin);
+    if(!u){ $('#lockMsg').textContent='Ugyldig kode eller bruger inaktiv.'; $('#lockMsg').style.display='block'; return; }
+    setActiveUser(u);
+    showDash();
+  };
 
-    const adminCode = (getAdminCfg().adminCode || '0705').trim();
-    if (pin === adminCode) { window.location.href = 'admin.html'; return; }
-
-    const users = getUsers().filter(u => u.active!==false);
-    const hit = users.find(u => String(u.code) === pin);
-    if (!hit) { $('#lockMsg').textContent = 'Ugyldig kode eller bruger ikke aktiv.'; $('#lockMsg').style.display='block'; return; }
-
-    setActiveUser(hit);
-    showFormFor(hit);
+  // DASH
+  function purgeOldDrafts(){
+    const days = Math.max(1, parseInt(cfg().retentionDays||'7',10));
+    const cutoff = Date.now() - days*24*3600*1000;
+    const pruned = allCards().filter(c => !(c.status==='draft' && (new Date(c.createdAt)).getTime() < cutoff));
+    setCards(pruned);
   }
-
-  function showFormFor(user){
-    $('#lock').style.display = 'none';
-    $('#form').style.display = '';
-    $('#who').textContent = user.name;
-    $('#name').value = user.name || '';
-    $('#date').value = $('#date').value || nowDate();
+  function cardsForUser(u){
+    return allCards().filter(c=>c.user===u.name).sort((a,b)=>new Date(b.updatedAt)-new Date(a.updatedAt));
   }
+  function showDash(){
+    const u = activeUser();
+    if(!u){ $('#lock').style.display=''; $('#dash').style.display='none'; $('#form').style.display='none'; return; }
 
-  // Draft
-  const loadDraft = () => { try{return JSON.parse(localStorage.getItem(LS_FORM)||'{}')}catch{return{}} };
-  const saveDraft = v => localStorage.setItem(LS_FORM, JSON.stringify(v));
-  function fill(v){
-    $('#date').value = v.date || nowDate();
-    $('#customer').value = v.customer || '';
-    $('#location').value = v.location || '';
-    $('#machine').value = v.machine || '';
-    $('#work').value = v.work || '';
-    $('#fault').value = v.fault || '';
-    $('#done').value = v.done || '';
-    $('#hours').value = v.hours ?? 0;
-    $('#mhours').value = v.mhours ?? 0;
-    $('#km').value = v.km ?? 0;
-    $('#note').value = v.note || '';
-  }
-  function gather(){
-    return {
-      date: $('#date').value,
-      name: $('#name').value.trim(),
-      customer: $('#customer').value.trim(),
-      location: $('#location').value.trim(),
-      machine: $('#machine').value.trim(),
-      work: $('#work').value.trim(),
-      fault: $('#fault').value.trim(),
-      done: $('#done').value.trim(),
-      hours: $('#hours').value || '0',
-      mhours: $('#mhours').value || '0',
-      km: $('#km').value || '0',
-      note: $('#note').value.trim()
-    };
-  }
+    purgeOldDrafts();
+    $('#who').textContent = u.name;
+    $('#lock').style.display='none';
+    $('#form')
 
-  function buildMail(vals){
-    const admin = getAdminCfg();
-    const to = (admin.emails || 'vaerksted@bredsgaard.dk').replace(/\s+/g,'');
-    const subjectPrefix = admin.subjectPrefix || 'Dagseddel';
-    const subject = `${subjectPrefix} – ${vals.date} – ${vals.name} – ${vals.customer || ''}`;
-    const footer = (admin.footer || 'Ref.: {dato} – {medarbejder}')
-                    .replace('{dato}', vals.date).replace('{medarbejder}', vals.name);
-
-    const body = `
-Medarbejder: ${vals.name}
-Dato: ${vals.date}
-
-Kunde: ${vals.customer}
-Lokation: ${vals.location}
-Maskine: ${vals.machine}
-
-Arbejdet art:
-${vals.work}
-
-Fejlbeskrivelse:
-${vals.fault}
-
-Udført arbejde:
-${vals.done}
-
-Tider/forbrug:
-- Normal: ${vals.hours} t
-- Maskin: ${vals.mhours} t
-- Kørsel: ${vals.km} km
-
-Noter:
-${vals.note}
-
-${footer}`.trim();
-
-    return `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  }
-
-  // Init
-  const active = getActiveUser();
-  if (active) showFormFor(active);
-  fill(loadDraft());
-
-  // Lock events
-  $('#unlockBtn').addEventListener('click', tryUnlock);
-  $('#pin').addEventListener('keydown', e => { if (e.key==='Enter') tryUnlock(); });
-  $('#gotoAdmin').addEventListener('click', () => location.href='admin.html');
-
-  // Form events
-  $('#save').addEventListener('click', () => { saveDraft(gather()); alert('Kladde gemt på denne enhed.'); });
-  $('#print').addEventListener('click', () => window.print());
-  $('#form').addEventListener('submit', e => {
-    e.preventDefault();
-
-    // 1) kræv aktiv bruger (PIN)
-    const active = getActiveUser();
-    if (!active) { alert('Du skal låse op med din kode før du kan sende.'); return; }
-
-    // 2) HTML5 validering – kræv alle felter udfyldt
-    const formEl = document.getElementById('form');
-    if (!formEl.reportValidity()) return;
-
-    // 3) Send
-    const vals = gather();
-    saveDraft(vals);
-    window.location.href = buildMail(vals);
-  });
-
-  // Billeder preview
-  const input = document.getElementById('images');
-  const preview = document.getElementById('preview');
-  input.addEventListener('change', () => {
-    preview.innerHTML = '';
-    [...input.files].slice(0,5).forEach(f => {
-      const img = do
