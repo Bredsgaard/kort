@@ -3,35 +3,95 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Admin – Arbejdskort</title>
+  <title>Adminpanel – Arbejdskort</title>
   <link rel="stylesheet" href="/css/style.css">
   <script src="/api/_util.js"></script>
-  <script src="/api/login.js"></script>
-  <script src="/api/cards.js"></script>
   <script src="/api/settings.js"></script>
 </head>
 <body>
-  <div class="header">
-    <h1 id="apptitle">Admin</h1>
-    <div class="nav"><a class="button" href="/">Medarbejder</a></div>
-  </div>
-  <div class="container">
-    <div id="login" class="card">
-      <h3>Admin-login</h3>
-      <div class="grid">
-        <div class="field third"><label>Admin-brugernavn</label><input id="u" class="input" placeholder="Brugernavn"></div>
-        <div class="field third"><label>Admin-kode</label><input id="p" class="input" type="password" inputmode="numeric" pattern="[0-9]*" placeholder="Kode"></div>
-        <div class="field third" style="align-self:end"><button id="loginBtn" class="button primary">Log ind</button></div>
-      </div>
-      <small class="hint">Koder vises aldrig i klar tekst. Admin-kode (fase 1): 0705</small>
+  <div class="header" style="background:#166a2e;color:#fff;">
+    <h1 id="apptitle">Arbejdskort – Admin</h1>
+    <div class="nav">
+      <a class="button ghost" href="/index.html" style="color:#fff;">Medarbejder</a>
+      <button id="logoutBtn" class="button ghost" style="color:#fff;">Log ud</button>
     </div>
   </div>
 
-<script>
-ensureDefaults(); setHeaderTitle(document.querySelector('#apptitle'));
-const sess=getSession();
-if(sess && sess.role==='admin'){ document.querySelector('.container').innerHTML=''; buildAdminUI(document.body); }
-document.querySelector('#loginBtn').onclick=async()=>{ const u=document.querySelector('#u').value.trim(); const p=document.querySelector('#p').value.trim(); const s=await adminLogin(u,p); if(!s) return alert('Forkert admin-login.'); document.querySelector('.container').innerHTML=''; buildAdminUI(document.body); };
-</script>
+  <div class="container">
+    <!-- LOGIN -->
+    <div id="login" class="card" style="max-width:640px;margin:auto;">
+      <h3>Admin-login</h3>
+      <div class="grid">
+        <div class="field half">
+          <label>Brugernavn</label>
+          <input id="u" class="input" placeholder="fx Bonde">
+        </div>
+        <div class="field half">
+          <label>Kode</label>
+          <input id="p" class="input" type="password" placeholder="****">
+        </div>
+      </div>
+      <div style="margin-top:12px;">
+        <button id="loginBtn" class="button primary">Log ind</button>
+      </div>
+      <small class="hint">Koden vises aldrig i klar tekst. Default kode: <b>0705</b></small>
+    </div>
+
+    <!-- ADMIN UI -->
+    <div id="adminUI" style="display:none;"></div>
+  </div>
+
+  <script>
+  ensureDefaults();
+  setHeaderTitle(document.querySelector('#apptitle'));
+  const sess = getSession();
+
+  const loginBox = document.querySelector('#login');
+  const adminBox = document.querySelector('#adminUI');
+  const logoutBtn = document.querySelector('#logoutBtn');
+
+  // hvis man allerede er logget ind
+  if (sess && sess.role === "admin") {
+    loginBox.style.display = "none";
+    adminBox.style.display = "block";
+    buildAdminUI(adminBox);
+  }
+
+  document.querySelector('#loginBtn').onclick = async ()=>{
+    const user = document.querySelector('#u').value.trim();
+    const code = document.querySelector('#p').value.trim();
+    const s = await adminLogin(user, code);
+    if (!s) return alert("Forkert admin-login.");
+    location.reload();
+  };
+
+  logoutBtn.onclick = logout;
+
+  // --- Brugernavn via ?u=Bonde ---
+  (function(){
+    const params = new URLSearchParams(location.search);
+    const u = params.get('u');
+    if (u) {
+      const un = document.getElementById('u');
+      if (un) un.value = u;
+      const pw = document.getElementById('p');
+      if (pw) pw.focus();
+      history.replaceState({}, document.title, location.pathname);
+    }
+  }());
+
+  // --- DEV-genvej: Ctrl+Shift+A = log ind som admin lokalt ---
+  window.addEventListener('keydown', e=>{
+    if (e.ctrlKey && e.shiftKey && e.key.toLowerCase()==='a') {
+      const sess = {
+        userId:'admin', role:'admin', username:'Bonde',
+        name:'Administrator', lastActivity:Date.now()
+      };
+      localStorage.setItem('ak_session', JSON.stringify(sess));
+      location.reload();
+    }
+  });
+  </script>
 </body>
 </html>
+
