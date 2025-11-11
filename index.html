@@ -13,144 +13,84 @@
     <h1 id="appTitle">Arbejdskort</h1>
   </div>
   <nav class="actions-inline">
-    <a class="link" href="history.html">Tidligere arbejdskort</a>
+    <a class="link" href="history.html">Tidligere</a>
     <button id="logout" class="secondary btn-small" type="button" style="display:none">Log ud</button>
     <a class="link" href="admin.html">Admin</a>
   </nav>
 </header>
 
 <main>
-  <!-- LOGIN -->
   <section id="lock" class="card">
     <h2>Log ind</h2>
     <div class="grid-2">
-      <div>
-        <label>Brugernavn</label>
-        <input id="loginUser" placeholder="fx pbo" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false" />
+      <div><label>Brugernavn</label>
+        <input id="loginUser" placeholder="fx pbo" autocomplete="username" autocapitalize="off" />
       </div>
-      <div>
-        <label>Kode</label>
+      <div><label>Kode</label>
         <input type="password" id="loginPin" inputmode="numeric" pattern="[0-9]*" placeholder="••••" autocomplete="new-password" />
       </div>
     </div>
-    <div class="actions">
-      <button class="primary" id="unlockBtn" type="button">Lås op</button>
-    </div>
+    <div class="actions"><button class="primary" id="unlockBtn" type="button">Lås op</button></div>
     <p id="lockMsg" class="danger" style="display:none;margin-top:8px"></p>
   </section>
 
-  <!-- ARBEJDSKORT -->
   <form id="form" style="display:none" autocomplete="off">
     <section class="card">
       <div class="bar-between">
         <div><strong>Kort-id:</strong> <span id="cardIdShort">NYT</span></div>
-        <div class="actions-inline">
-          <a class="link" href="history.html">Se tidligere</a>
-        </div>
+        <a class="link" href="history.html">Se tidligere</a>
       </div>
 
       <div class="grid-2">
-        <div>
-          <label>Dags dato</label>
-          <input type="date" id="date" required />
-        </div>
-        <div>
-          <label>Medarbejdernavn</label>
-          <input type="text" id="name" required readonly />
-        </div>
+        <div><label>Dags dato</label><input type="date" id="date" required /></div>
+        <div><label>Medarbejdernavn</label><input id="name" readonly required /></div>
       </div>
 
-      <label>Kunde / Firma</label>
-      <input type="text" id="customer" placeholder="Fx Jensen Maskinservice" required />
-
+      <label>Kunde / Firma</label><input id="customer" placeholder="Fx Jensen Maskinservice" required />
       <div class="grid-2">
-        <div>
-          <label>Lokation</label>
-          <input type="text" id="location" placeholder="Adresse/By" required />
-        </div>
-        <div>
-          <label>Maskine / Model</label>
-          <input type="text" id="machine" placeholder="Fx McConnel PA6565T" required />
-        </div>
+        <div><label>Lokation</label><input id="location" placeholder="Adresse/By" required /></div>
+        <div><label>Maskine / Model</label><input id="machine" placeholder="Fx McConnel PA6565T" required /></div>
       </div>
 
       <div class="grid-3">
-        <div>
-          <label>Maskin nr</label>
-          <input type="text" id="machineNo" placeholder="Fx serienr./intern nr" />
-        </div>
-        <div>
-          <label>Maskintimer</label>
-          <input type="number" step="0.25" min="0" id="mhours" />
-        </div>
-        <div>
-          <label>Kørte km</label>
-          <input type="number" step="0.1" min="0" id="km" />
-        </div>
+        <div><label>Maskin nr</label><input id="machineNo" placeholder="Fx serienr./intern nr" /></div>
+        <div><label>Maskintimer</label><input type="number" step="0.25" min="0" id="mhours" /></div>
+        <div><label>Kørte km</label><input type="number" step="0.1" min="0" id="km" /></div>
       </div>
 
       <div class="grid-3">
-        <div>
-          <label>Svejsning (timer)</label>
-          <input type="number" step="0.25" min="0" id="welding" />
-        </div>
-        <div>
-          <label>Elektroder (stk)</label>
-          <input type="number" step="1" min="0" id="electrodes" />
-        </div>
-        <div>
-          <label>Diesel (liter)</label>
-          <input type="number" step="0.1" min="0" id="diesel" />
-        </div>
+        <div><label>Svejsning (timer)</label><input type="number" step="0.25" min="0" id="welding" /></div>
+        <div><label>Elektroder (stk)</label><input type="number" step="1" min="0" id="electrodes" /></div>
+        <div><label>Diesel (liter)</label><input type="number" step="0.1" min="0" id="diesel" /></div>
       </div>
 
       <div class="grid-3">
-        <div>
-          <label>Normal timer</label>
-          <input type="number" step="0.25" min="0" id="hours" />
-        </div>
-        <div>
-          <label>Overtimer</label>
-          <input type="number" step="0.25" min="0" id="overtime" />
-        </div>
-        <div>
-          <label>Arbejdet art</label>
-          <input type="text" id="work" placeholder="Fx service, olieskift, kæde" required />
-        </div>
+        <div><label>Normal timer</label><input type="number" step="0.25" min="0" id="hours" /></div>
+        <div><label>Overtimer</label><input type="number" step="0.25" min="0" id="overtime" /></div>
+        <div><label>Arbejdet art</label><input id="work" placeholder="Fx service, olieskift, kæde" required /></div>
       </div>
 
-      <!-- Admin-definerede arbejdstyper -->
       <label>Vælg arbejdstype</label>
       <select id="workPresetSel"></select>
 
-      <label>Fejlbeskrivelse</label>
-      <textarea id="fault" rows="3" placeholder="Kort beskrivelse af fejl"></textarea>
+      <label>Fejlbeskrivelse</label><textarea id="fault" rows="3" placeholder="Kort beskrivelse af fejl"></textarea>
+      <label>Udført arbejde</label><textarea id="done" rows="3" placeholder="(krævet for afsendelse)"></textarea>
+      <label>Bemærkninger</label><textarea id="note" rows="2"></textarea>
 
-      <label>Udført arbejde</label>
-      <textarea id="done" rows="3" placeholder="Hvad blev lavet? (krævet for afsendelse)"></textarea>
-
-      <label>Bemærkninger</label>
-      <textarea id="note" rows="2" placeholder="Evt. bemærkninger"></textarea>
-
-      <!-- Forbrug / materialer -->
       <section class="card" style="margin-top:14px">
         <h3>Materialer / Forbrug</h3>
         <div id="consBox"></div>
       </section>
 
       <div class="actions">
-        <button type="button" id="newBlank">➕ Nyt (ryd felter)</button>
+        <button type="button" id="newBlank">➕ Nyt</button>
         <button type="button" id="save">💾 Gem (udkast)</button>
         <button type="button" id="print">Udskriv / PDF</button>
-        <button type="submit" class="primary">✉️ Send (markeres sendt)</button>
+        <button type="submit" class="primary">✉️ Send</button>
       </div>
 
-      <!-- Valgfrit billede-upload (for print/PDF) -->
       <div class="grid-2">
-        <div>
-          <label>Billeder (maks 5)</label>
-          <input type="file" id="images" accept="image/*" multiple />
-        </div>
+        <div><label>Billeder (maks 5)</label><input type="file" id="images" accept="image/*" multiple /></div>
         <div id="preview" class="preview"></div>
       </div>
     </section>
@@ -161,78 +101,73 @@
 
 <script>
 (() => {
-  // storage keys
-  const LS_ADMIN='ak_admin_v4';
-  const LS_USERS='ak_users_v3';
-  const LS_ACTIVE='ak_active_v1';
-  const LS_CARDS='ak_cards_v3';
-  const LS_OPEN='ak_open_id';
+  // -------- server helpers --------
+  async function loginAPI(username, code){
+    const r = await fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ username, code }) });
+    return r.json();
+  }
+  async function loadSettings(){
+    const r = await fetch('/api/settings'); return r.json();
+  }
 
+  // -------- local helpers --------
+  const LS_ACTIVE='ak_active_v1', LS_CARDS='ak_cards_v3', LS_OPEN='ak_open_id';
   const $ = s => document.querySelector(s);
-  const cfg = () => JSON.parse(localStorage.getItem(LS_ADMIN)||'{}');
-  const users = () => JSON.parse(localStorage.getItem(LS_USERS)||'[]');
   const active = () => JSON.parse(localStorage.getItem(LS_ACTIVE)||'null');
   const setActive = u => localStorage.setItem(LS_ACTIVE, JSON.stringify(u));
   const allCards = () => JSON.parse(localStorage.getItem(LS_CARDS)||'[]');
   const setCards = a => localStorage.setItem(LS_CARDS, JSON.stringify(a));
 
+  let SETTINGS = {};
+  let currentId = null;
+
   const today = () => new Date().toISOString().slice(0,10);
   const uid = () => Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-4);
-
-  document.addEventListener('DOMContentLoaded', ()=>{
-    $('#appTitle').textContent = cfg().appName || 'Arbejdskort';
-
-    // fyld arbejdstype dropdown + forbrug
-    fillWorkPresets();
-    renderConsumables();
-  });
-
-  function fillWorkPresets(){
-    const sel = $('#workPresetSel'); sel.innerHTML='';
-    const list = cfg().workPresets||[];
-    const def = document.createElement('option'); def.value=''; def.textContent='— vælg —'; sel.appendChild(def);
-    list.forEach(p=>{ const o=document.createElement('option'); o.value=p; o.textContent=p; sel.appendChild(o); });
-    sel.onchange = () => {
-      const v = sel.value.trim(); if (!v) return;
-      const w = $('#work'); w.value = w.value ? (w.value + ', ' + v) : v;
-      sel.value='';
-    };
-  }
-
-  function renderConsumables(){
-    const box = $('#consBox'); const items = (cfg().consumables||[]);
-    if (!items.length){ box.innerHTML='<p class="hint">Ingen forbrugsposter defineret.</p>'; return; }
-    box.innerHTML='';
-    items.forEach(it=>{
-      const row=document.createElement('div'); row.className='actions-inline'; row.style.margin='6px 0';
-      row.innerHTML=`
-        <label><input type="checkbox" data-id="${it.id}" class="consChk"> ${it.name}</label>
-        <input type="number" class="consQty" data-id="${it.id}" min="0" step="0.1" placeholder="Antal">
-        <span class="hint">${it.unit||''}</span>`;
-      box.appendChild(row);
-    });
-  }
 
   function showForm(){ $('#lock').style.display='none'; $('#form').style.display=''; $('#logout').style.display=''; }
   function showLogin(){ $('#lock').style.display=''; $('#form').style.display='none'; $('#logout').style.display='none'; }
 
-  // Login
-  $('#unlockBtn').onclick = () => {
-    const un=($('#loginUser').value||'').trim().toLowerCase();
-    const pin=($('#loginPin').value||'').trim();
-    const u = users().find(x => x.active!==false && (x.username||'').toLowerCase()===un && String(x.code)===pin);
-    if(!u){ $('#lockMsg').textContent='Forkert brugernavn eller kode – eller bruger inaktiv.'; $('#lockMsg').style.display='block'; return; }
-    setActive(u);
-    prepareNew();
-    const openId = localStorage.getItem(LS_OPEN);
-    if (openId) { localStorage.removeItem(LS_OPEN); openCard(openId); }
-    showForm();
+  document.addEventListener('DOMContentLoaded', async ()=>{
+    SETTINGS = await loadSettings();
+    $('#appTitle').textContent = SETTINGS.appName || 'Arbejdskort';
+    fillWorkPresets();
+    renderConsumables();
+    const u = active();
+    if (u){ prepareNew(); autoOpenIfNeeded(); showForm(); } else { showLogin(); }
+  });
+
+  // UI fill
+  function fillWorkPresets(){
+    const sel = $('#workPresetSel'); sel.innerHTML='';
+    const list = SETTINGS.workPresets||[];
+    const def = document.createElement('option'); def.value=''; def.textContent='— vælg —'; sel.appendChild(def);
+    list.forEach(p=>{ const o=document.createElement('option'); o.value=p; o.textContent=p; sel.appendChild(o); });
+    sel.onchange = ()=>{ const v=sel.value.trim(); if(!v) return; const w=$('#work'); w.value = w.value ? (w.value + ', ' + v) : v; sel.value=''; };
+  }
+  function renderConsumables(){
+    const box = $('#consBox'); const items = (SETTINGS.consumables||[]);
+    if (!items.length){ box.innerHTML='<p class="hint">Ingen forbrugsposter defineret i Admin.</p>'; return; }
+    box.innerHTML='';
+    items.forEach(it=>{
+      const row=document.createElement('div'); row.className='actions-inline'; row.style.margin='6px 0';
+      row.innerHTML=`<label><input type="checkbox" data-id="${it.id}" class="consChk"> ${it.name}</label>
+        <input type="number" class="consQty" data-id="${it.id}" min="0" step="0.1" placeholder="Antal"><span class="hint">${it.unit||''}</span>`;
+      box.appendChild(row);
+    });
+  }
+
+  // login
+  $('#unlockBtn').onclick = async ()=>{
+    const un = ($('#loginUser').value||'').trim();
+    const pin= ($('#loginPin').value||'').trim();
+    const { ok, user } = await loginAPI(un, pin);
+    if (!ok){ $('#lockMsg').textContent='Forkert brugernavn/kode eller inaktiv bruger.'; $('#lockMsg').style.display='block'; return; }
+    setActive(user);
+    prepareNew(); autoOpenIfNeeded(); showForm();
   };
   $('#logout').onclick = ()=>{ localStorage.removeItem(LS_ACTIVE); showLogin(); };
 
-  // form state
-  let currentId = null;
-
+  // form helpers
   function prepareNew(){
     currentId = uid();
     $('#cardIdShort').textContent='NYT';
@@ -240,6 +175,8 @@
     $('#name').value=active()?.name||'';
     ['customer','location','machine','machineNo','work','fault','done','note'].forEach(id=>$('#'+id).value='');
     ['mhours','km','welding','electrodes','diesel','hours','overtime'].forEach(id=>$('#'+id).value='');
+    document.querySelectorAll('.consChk').forEach(x=>x.checked=false);
+    document.querySelectorAll('.consQty').forEach(x=>x.value='');
     const p=$('#preview'); if(p) p.innerHTML='';
   }
 
@@ -247,53 +184,42 @@
     const cons = [];
     document.querySelectorAll('.consChk').forEach(ch=>{
       if (ch.checked){
-        const id = ch.dataset.id;
-        const qty = (document.querySelector(`.consQty[data-id="${id}"]`)?.value||'').trim();
-        const def = (cfg().consumables||[]).find(x=>x.id===id);
+        const id=ch.dataset.id, qty=(document.querySelector(`.consQty[data-id="${id}"]`)?.value||'').trim();
+        const def=(SETTINGS.consumables||[]).find(x=>x.id===id);
         cons.push({ id, name:def?.name||'', unit:def?.unit||'', qty });
       }
     });
-
     return {
-      date: $('#date').value,
-      name: $('#name').value.trim(),
-      customer: $('#customer').value.trim(),
-      location: $('#location').value.trim(),
-      machine: $('#machine').value.trim(),
-      machineNo: $('#machineNo').value.trim(),
-      mhours: $('#mhours').value,
-      km: $('#km').value,
-      welding: $('#welding').value,
-      electrodes: $('#electrodes').value,
-      diesel: $('#diesel').value,
-      hours: $('#hours').value,
-      overtime: $('#overtime').value,
-      work: $('#work').value.trim(),
-      fault: $('#fault').value.trim(),
-      done: $('#done').value.trim(),
-      note: $('#note').value.trim(),
+      date: $('#date').value, name: $('#name').value.trim(),
+      customer: $('#customer').value.trim(), location: $('#location').value.trim(),
+      machine: $('#machine').value.trim(), machineNo: $('#machineNo').value.trim(),
+      mhours: $('#mhours').value, km: $('#km').value, welding: $('#welding').value,
+      electrodes: $('#electrodes').value, diesel: $('#diesel').value,
+      hours: $('#hours').value, overtime: $('#overtime').value,
+      work: $('#work').value.trim(), fault: $('#fault').value.trim(),
+      done: $('#done').value.trim(), note: $('#note').value.trim(),
       consumables: cons
     };
   }
 
   function upsert(status='draft'){
     const u=active(); if(!u) return;
-    const arr=allCards(); const now=new Date().toISOString(); const fields=gather();
+    const arr=allCards(); const now=new Date().toISOString(); const f=gather();
     const i=arr.findIndex(c=>c.id===currentId);
-    const payload={ id: currentId||uid(), user: u.username, createdAt: i>=0?arr[i].createdAt: now, updatedAt: now, status, fields };
+    const payload={ id: currentId, user: u.username, createdAt: i>=0?arr[i].createdAt: now, updatedAt: now, status, fields: f };
     if(i>=0) arr[i]=payload; else arr.push(payload);
     setCards(arr);
   }
 
   function requiredOk(){
-    const r=(cfg().requiredFields||[]); const f=gather();
+    const r=(SETTINGS.requiredFields||[]); const f=gather();
     for(const k of r){ if(!String(f[k]??'').trim()){ alert('Manglende felt: '+k); return false; } }
     return true;
   }
 
   function buildMail(f){
-    const c=cfg(); const to=(c.emails||'pb@bredsgaard.dk').replace(/\s+/g,'');
-    const subj=`${c.subjectPrefix||'Arbejdskort'} – ${f.date} – ${f.name} – ${f.customer||''}`;
+    const to=(SETTINGS.emails||'pb@bredsgaard.dk').replace(/\s+/g,'');
+    const subj=`${SETTINGS.subjectPrefix||'Arbejdskort'} – ${f.date} – ${f.name} – ${f.customer||''}`;
     let consText='Ingen';
     if (f.consumables && f.consumables.length){
       consText = f.consumables.map(x=>`- ${x.name}: ${x.qty||'?'} ${x.unit||''}`).join('\n');
@@ -332,9 +258,8 @@ ${consText}
 Bemærkninger:
 ${f.note}
 
-(Hvis der er billeder, så er de vedhæftet i PDF fra Udskriv.)
-${(c.footer||'Ref.: {dato} – {medarbejder}').replace('{dato}',f.date).replace('{medarbejder}',f.name)}`.trim();
-
+(Hvis der er billeder, så vedhæft PDF fra Udskriv.)
+${(SETTINGS.footer||'Ref.: {dato} – {medarbejder}').replace('{dato}',f.date).replace('{medarbejder}',f.name)}`.trim();
     return `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
   }
 
@@ -344,50 +269,40 @@ ${(c.footer||'Ref.: {dato} – {medarbejder}').replace('{dato}',f.date).replace(
   $('#print').onclick = ()=>window.print();
   document.getElementById('form').addEventListener('submit', e=>{
     e.preventDefault();
-    const f = gather();
-    if (!f.done.trim()) { alert('Feltet "Udført arbejde" skal udfyldes før du kan sende.'); return; }
+    const f=gather();
+    if (!f.done.trim()) { alert('Feltet "Udført arbejde" skal udfyldes før afsendelse.'); return; }
     if(!requiredOk()) return;
-    upsert('sent');
-    window.location.href=buildMail(f);
+    upsert('sent'); window.location.href=buildMail(f);
   });
 
-  // billede preview
+  // billeder
   const file = document.getElementById('images');
-  if (file) {
-    file.addEventListener('change', ()=>{
-      const box=document.getElementById('preview'); if (!box) return;
-      box.innerHTML=''; [...file.files].slice(0,5).forEach(f=>{ const img=document.createElement('img'); img.src=URL.createObjectURL(f); img.alt=f.name; box.appendChild(img); });
-    });
-  }
+  file?.addEventListener('change', ()=>{
+    const box=document.getElementById('preview'); if (!box) return;
+    box.innerHTML=''; [...file.files].slice(0,5).forEach(f=>{ const img=document.createElement('img'); img.src=URL.createObjectURL(f); img.alt=f.name; box.appendChild(img); });
+  });
 
-  // åbn eksisterende
+  // åbn kort fra historik
   function openCard(id){
-    const u = active(); if(!u) return;
+    const u=active(); if(!u) return;
     const c=allCards().find(x=>x.id===id && x.user===u.username); if(!c) return;
     currentId=id; $('#cardIdShort').textContent=id.slice(0,6).toUpperCase();
     const f=c.fields||{};
     $('#date').value=f.date||today(); $('#name').value=u.name;
     ['customer','location','machine','machineNo','work','fault','done','note'].forEach(k=>$('#'+k).value=f[k]||'');
     ['mhours','km','welding','electrodes','diesel','hours','overtime'].forEach(k=>$('#'+k).value=f[k]||'');
-    // forbrug
     (f.consumables||[]).forEach(x=>{
       const chk=document.querySelector(`.consChk[data-id="${x.id}"]`);
       const qty=document.querySelector(`.consQty[data-id="${x.id}"]`);
       if(chk) chk.checked=true; if(qty) qty.value=x.qty||'';
     });
   }
-
-  // auto open
-  (function autoOpen(){
-    const u=active();
-    if (u) {
-      prepareNew();
-      const openId = localStorage.getItem(LS_OPEN);
-      if (openId) { localStorage.removeItem(LS_OPEN); openCard(openId); }
-      showForm();
-    } else showLogin();
-  })();
+  function autoOpenIfNeeded(){
+    const openId = localStorage.getItem(LS_OPEN);
+    if (openId) { localStorage.removeItem(LS_OPEN); openCard(openId); }
+  }
 })();
 </script>
 </body>
 </html>
+
