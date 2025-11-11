@@ -16,25 +16,71 @@
 </header>
 
 <main>
-  <section class="card">
-    <h2>Indstillinger (gemmes i denne enheds browser)</h2>
-
-    <label>Modtager-e-mails (komma-separeret)</label>
-    <input type="text" id="emails" placeholder="vaerksted@..., oekonomi@..." />
-
-    <label>Emne-prefix</label>
-    <input type="text" id="subjectPrefix" placeholder="Dagseddel" />
-
-    <label>Mail-footer (brug {dato} og {medarbejder})</label>
-    <textarea id="footer" rows="3">Ref.: {dato} – {medarbejder}</textarea>
-
+  <!-- ADMIN LOCK -->
+  <section id="adminLock" class="card">
+    <h2>Admin adgang</h2>
+    <p class="hint">Indtast admin-kode for at fortsætte.</p>
+    <label>Admin-kode</label>
+    <input type="password" id="adminPin" inputmode="numeric" pattern="[0-9]*" placeholder="0705" />
     <div class="actions">
-      <button class="primary" id="saveAdmin">Gem indstillinger</button>
-      <button id="resetAdmin">Nulstil</button>
+      <button class="primary" id="adminUnlock">Lås op</button>
+    </div>
+    <p id="adminMsg" class="danger" style="display:none;margin-top:8px"></p>
+  </section>
+
+  <!-- ADMIN PANEL -->
+  <section id="panel" class="card" style="display:none">
+    <h2>Indstillinger</h2>
+    <div class="grid-2">
+      <div>
+        <label>Modtager-e-mails (komma-separeret)</label>
+        <input type="text" id="emails" placeholder="vaerksted@..., oekonomi@..." />
+      </div>
+      <div>
+        <label>Emne-prefix</label>
+        <input type="text" id="subjectPrefix" placeholder="Dagseddel" />
+      </div>
     </div>
 
-    <p class="hint">Dette er en ren klient-prototype uden rigtigt login.  
-    Når du vil have brugere/roller og central lagring, flytter vi til backend.</p>
+    <label>Mail-footer (brug {dato} og {medarbejder})</label>
+    <textarea id="footer" rows="2">Ref.: {dato} – {medarbejder}</textarea>
+
+    <div class="grid-2" style="margin-top:12px">
+      <div>
+        <label>Admin-kode</label>
+        <input type="password" id="adminCode" placeholder="0705" />
+      </div>
+      <div class="actions" style="align-items:end">
+        <button class="primary" id="saveCfg">Gem indstillinger</button>
+        <button id="resetCfg">Nulstil</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="usersCard" class="card" style="display:none">
+    <h2>Brugere & koder</h2>
+
+    <div class="grid-3">
+      <div>
+        <label>Navn</label>
+        <input id="uName" placeholder="Fx Per Bonde" />
+      </div>
+      <div>
+        <label>Kode (PIN)</label>
+        <input id="uCode" placeholder="1234" inputmode="numeric" pattern="[0-9]*" />
+      </div>
+      <div class="actions" style="align-items:end">
+        <button class="primary" id="addUser">Tilføj / Opdatér</button>
+        <button id="clearInputs">Ryd</button>
+      </div>
+    </div>
+
+    <div class="tableWrap">
+      <table class="table">
+        <thead><tr><th>Navn</th><th>Kode</th><th>Aktiv</th><th>Handling</th></tr></thead>
+        <tbody id="usersTable"></tbody>
+      </table>
+    </div>
   </section>
 </main>
 
@@ -43,29 +89,112 @@
 <script>
 (() => {
   const LS_ADMIN = 'ds_admin_v1';
+  const LS_USERS = 'ds_users_v1';
+
   const $ = s => document.querySelector(s);
-  function getAdmin(){ try{return JSON.parse(localStorage.getItem(LS_ADMIN)||'{}')}catch{return{}} }
-  function setAdmin(v){ localStorage.setItem(LS_ADMIN, JSON.stringify(v)); }
+  const byId = id => document.getElementById(id);
 
-  // load
-  const a = getAdmin();
-  $('#emails').value = a.emails || 'vaerksted@bredsgaard.dk';
-  $('#subjectPrefix').value = a.subjectPrefix || 'Dagseddel';
-  $('#footer').value = a.footer || 'Ref.: {dato} – {medarbejder}';
+  function getCfg(){ try{return JSON.parse(localStorage.getItem(LS_ADMIN)||'{}')}catch{return{}} }
+  function setCfg(v){ localStorage.setItem(LS_ADMIN, JSON.stringify(v)); }
+  function getUsers(){ try{return JSON.parse(localStorage.getItem(LS_USERS)||'[]')}catch{return[]} }
+  function setUsers(v){ localStorage.setItem(LS_USERS, JSON.stringify(v)); }
 
-  // save & reset
-  $('#saveAdmin').addEventListener('click', () => {
-    setAdmin({
-      emails: $('#emails').value.trim(),
-      subjectPrefix: $('#subjectPrefix').value.trim(),
-      footer: $('#footer').value
+  // --- admin unlock ---
+  function tryAdminUnlock(){
+    const input = byId('adminPin').value.trim();
+    const cfg = getCfg();
+    const code = (cfg.adminCode || '0705').trim();
+    if (input === code) {
+      byId('adminLock').style.display = 'none';
+      byId('panel').style.display = '';
+      byId('usersCard').style.display = '';
+      loadCfg();
+      renderUsers();
+    } else {
+      byId('adminMsg').textContent = 'Forkert kode.';
+      byId('adminMsg').style.display = 'block';
+    }
+  }
+
+  // --- cfg load/save ---
+  function loadCfg(){
+    const c = getCfg();
+    byId('emails').value = c.emails || 'vaerksted@bredsgaard.dk';
+    byId('subjectPrefix').value = c.subjectPrefix || 'Dagseddel';
+    byId('footer').value = c.footer || 'Ref.: {dato} – {medarbejder}';
+    byId('adminCode').value = c.adminCode || '0705';
+  }
+  function saveCfg(){
+    setCfg({
+      emails: byId('emails').value.trim(),
+      subjectPrefix: byId('subjectPrefix').value.trim() || 'Dagseddel',
+      footer: byId('footer').value,
+      adminCode: byId('adminCode').value.trim() || '0705'
     });
-    alert('Indstillinger gemt (lokalt).');
-  });
-  $('#resetAdmin').addEventListener('click', () => {
-    localStorage.removeItem(LS_ADMIN);
-    location.reload();
-  });
+    alert('Indstillinger gemt.');
+  }
+
+  // --- users ---
+  function renderUsers(){
+    const tbody = byId('usersTable'); tbody.innerHTML = '';
+    getUsers().forEach((u, idx) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${u.name}</td>
+        <td>${u.code}</td>
+        <td>${u.active!==false ? 'Ja' : 'Nej'}</td>
+        <td class="actions-inline">
+          <button data-idx="${idx}" class="edit">Redigér</button>
+          <button data-idx="${idx}" class="toggle">${u.active!==false?'Deaktivér':'Aktivér'}</button>
+          <button data-idx="${idx}" class="del danger">Slet</button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+
+    // handlers
+    tbody.querySelectorAll('.edit').forEach(btn=>{
+      btn.addEventListener('click', e=>{
+        const i = +e.target.dataset.idx, u = getUsers()[i];
+        byId('uName').value = u.name; byId('uCode').value = u.code;
+      });
+    });
+    tbody.querySelectorAll('.toggle').forEach(btn=>{
+      btn.addEventListener('click', e=>{
+        const i = +e.target.dataset.idx; const arr = getUsers();
+        arr[i].active = !(arr[i].active!==false);
+        setUsers(arr); renderUsers();
+      });
+    });
+    tbody.querySelectorAll('.del').forEach(btn=>{
+      btn.addEventListener('click', e=>{
+        const i = +e.target.dataset.idx; const arr = getUsers();
+        if (confirm(`Slet ${arr[i].name}?`)) { arr.splice(i,1); setUsers(arr); renderUsers(); }
+      });
+    });
+  }
+
+  function addOrUpdateUser(){
+    const name = byId('uName').value.trim();
+    const code = byId('uCode').value.trim();
+    if (!name || !code) { alert('Udfyld både navn og kode.'); return; }
+
+    const arr = getUsers();
+    const i = arr.findIndex(u => u.name.toLowerCase() === name.toLowerCase());
+    const payload = { name, code, active: true };
+    if (i>=0) arr[i] = payload; else arr.push(payload);
+    setUsers(arr); renderUsers();
+    alert('Bruger gemt.');
+  }
+
+  // events
+  byId('adminUnlock').addEventListener('click', tryAdminUnlock);
+  byId('saveCfg').addEventListener('click', saveCfg);
+  byId('resetCfg').addEventListener('click', ()=>{ localStorage.removeItem(LS_ADMIN); loadCfg(); });
+  byId('addUser').addEventListener('click', addOrUpdateUser);
+  byId('clearInputs').addEventListener('click', ()=>{ byId('uName').value=''; byId('uCode').value=''; });
+
+  // autofocus
+  byId('adminPin').focus();
 })();
 </script>
 </body>
