@@ -1,235 +1,175 @@
-<!doctype html><html lang="da"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Arbejdskort</title>
-<link rel="stylesheet" href="css/style.css">
-</head><body>
-<div class="topbar"><div class="wrap">
-  <div>Arbejdskort</div>
-  <div id="who"></div>
-</div></div>
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Nyt arbejdskort – Arbejdskort</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
 
-<div class="wrap">
-  <!-- LOGIN -->
-  <div id="login" class="card">
-    <h1>Log ind</h1>
-    <div class="row">
-      <div><label>Brugernavn</label><input id="lu" placeholder="Brugernavn" autocomplete="username"></div>
-      <div><label>Kode</label><input id="lp" type="password" placeholder="Kode" autocomplete="current-password"></div>
+  <header class="topbar">
+    <div class="container bar">
+      <div class="brand">Arbejdskort</div>
+      <nav class="nav">
+        <a class="nav-link active" href="index.html">Nyt arbejdskort</a>
+        <a class="nav-link" href="history.html">Tidligere kort</a>
+        <a class="nav-link" href="admin.html">Admin</a>
+      </nav>
     </div>
-    <div style="margin-top:12px"><button class="btn" id="btnLogin">Log ind</button></div>
-    <div id="lmsg" class="mut" style="margin-top:6px;display:none"></div>
-  </div>
+  </header>
 
-  <!-- DASH -->
-  <div id="dash" class="card" style="display:none">
-    <h1>Nyt arbejdskort</h1>
-    <div class="row-3">
-      <div><label>Dags dato</label><input id="d_dato" type="date"></div>
-      <div><label>Kunde / Lokation</label><input id="d_kunde" placeholder="Fx navn, adresse"></div>
-      <div><label>Varenr.</label><input id="d_vnr" placeholder="Fx interne varenr."></div>
-    </div>
-    <div class="row-3" style="margin-top:8px">
-      <div><label>Maskin nr</label><input id="d_maskin" placeholder="Serienr./intern nr"></div>
-      <div><label>Maskintimer</label><input id="d_timer" inputmode="decimal"></div>
-      <div><label>Kørte km</label><input id="d_km" inputmode="decimal"></div>
-    </div>
-    <div class="row-3" style="margin-top:8px">
-      <div><label>Svejsning (timer)</label><input id="d_svej" inputmode="decimal"></div>
-      <div><label>Elektroder (stk)</label><input id="d_elk" inputmode="decimal"></div>
-      <div><label>Diesel (liter)</label><input id="d_diesel" inputmode="decimal"></div>
-    </div>
-    <div class="row-3" style="margin-top:8px">
-      <div><label>Normal timer</label><input id="d_norm" inputmode="decimal"></div>
-      <div><label>Overtimer</label><input id="d_over" inputmode="decimal"></div>
-      <div>
-        <label>Arbejdet art</label>
-        <select id="d_art"></select>
-      </div>
-    </div>
-    <div class="card" style="margin:12px 0">
-      <h2>Forbrug</h2>
-      <div id="consWrap"></div>
-      <div class="mut">Tilføjes i admin. Indtast kun mængder der er brugt.</div>
-    </div>
-    <div>
-      <label>Udført arbejde / Fejlbeskrivelse</label>
-      <textarea id="d_udf" placeholder="Skriv hvad der er gjort (påkrævet før afsendelse)"></textarea>
-    </div>
-    <div style="margin-top:12px;display:flex;gap:8px">
-      <button class="btn" id="btnSave">Gem</button>
-      <button class="btn" id="btnSend">Send som mail</button>
-      <button class="btn btn-secondary" id="btnHist">Se tidligere</button>
-      <button class="btn btn-secondary" id="btnLogout">Log ud</button>
-    </div>
-  </div>
+  <main class="container">
+    <section class="card" aria-labelledby="newTitle">
+      <h1 class="card-title" id="newTitle">Nyt arbejdskort</h1>
+      <p class="subtle" style="margin-top:-6px">Felter uden forudfyldte værdier—medarbejderen tager aktivt stilling.</p>
 
-  <!-- HISTORIK -->
-  <div id="hist" class="card" style="display:none">
-    <h1>Mine arbejdskort</h1>
-    <div style="margin-bottom:8px">
-      <select id="range">
-        <option value="7">Seneste 7 dage</option>
-        <option value="30">Seneste 30 dage</option>
-      </select>
-      <button class="btn btn-secondary" id="btnBack">Tilbage</button>
-    </div>
-    <table id="tbl"><thead>
-      <tr><th>Dato</th><th>Kunde</th><th>Arbejdet art</th><th>Status</th></tr>
-    </thead><tbody></tbody></table>
-  </div>
-</div>
+      <form id="job-form" class="form-grid" autocomplete="off">
+        <!-- Bruger & dato -->
+        <div class="field">
+          <label for="jfUser">Brugernavn</label>
+          <input id="jfUser" class="input" type="text" placeholder="Mit brugernavn">
+        </div>
+        <div class="field">
+          <label for="jfDate">Dato</label>
+          <input id="jfDate" class="input" type="date">
+        </div>
 
-<script>
-const $ = sel => document.querySelector(sel);
-const api = (p, opt={}) => fetch(p, opt);
-const session = {
-  get(){ try{return JSON.parse(localStorage.getItem('ak_session_v1')||'null')}catch{return null}},
-  set(v){ localStorage.setItem('ak_session_v1', JSON.stringify(v)); },
-  clear(){ localStorage.removeItem('ak_session_v1'); }
-};
+        <!-- Maskine & timers -->
+        <div class="field">
+          <label for="jfMachineNo">Maskin nr</label>
+          <input id="jfMachineNo" class="input" type="text" placeholder="Fx serienr./intern nr">
+        </div>
+        <div class="field">
+          <label for="jfMachineHours">Maskintimer</label>
+          <input id="jfMachineHours" class="input" type="number" min="0" step="0.1" placeholder="">
+        </div>
 
-let settings=null;
+        <!-- Kørte km & forbrug -->
+        <div class="field">
+          <label for="jfKm">Kørte km</label>
+          <input id="jfKm" class="input" type="number" min="0" step="1" placeholder="">
+        </div>
+        <div class="field">
+          <label for="jfDiesel">Diesel (liter)</label>
+          <input id="jfDiesel" class="input" type="number" min="0" step="0.1" placeholder="">
+        </div>
 
-async function boot(){
-  settings = await (await api('/api/settings')).json();
-  $('#d_dato').value = new Date().toISOString().slice(0,10);
+        <!-- Svejsning/elektroder -->
+        <div class="field">
+          <label for="jfWeldHours">Svejsning (timer)</label>
+          <input id="jfWeldHours" class="input" type="number" min="0" step="0.1" placeholder="">
+        </div>
+        <div class="field">
+          <label for="jfElectrodes">Elektroder (stk)</label>
+          <input id="jfElectrodes" class="input" type="number" min="0" step="1" placeholder="">
+        </div>
 
-  // fyld arbejdstyper + forbrug
-  const art = $('#d_art'); art.innerHTML='';
-  settings.workTypes.forEach(w => art.append(new Option(w,w)));
-  const cons = $('#consWrap'); cons.innerHTML='';
-  settings.consumables.forEach(c=>{
-    const row=document.createElement('div'); row.className='row-3'; row.style.marginTop='8px';
-    row.innerHTML = `<div><label>Vare</label><input value="${c.name}" disabled></div>
-                     <div><label>Enhed</label><input value="${c.unit}" disabled></div>
-                     <div><label>Mængde</label><input inputmode="decimal" data-cons="${c.name}" placeholder="0 ${c.unit}"></div>`;
-    cons.append(row);
-  });
+        <!-- Normal/overtime -->
+        <div class="field">
+          <label for="jfNormal">Normal timer</label>
+          <input id="jfNormal" class="input" type="number" min="0" step="0.1" placeholder="">
+        </div>
+        <div class="field">
+          <label for="jfOver">Overtimer</label>
+          <input id="jfOver" class="input" type="number" min="0" step="0.1" placeholder="">
+        </div>
 
-  const s = session.get();
-  if(s?.role==='user'){
-    $('#login').style.display='none'; $('#dash').style.display='';
-    $('#who').textContent = `Logget ind: ${s.name} (${s.username})`;
-  }else{
-    $('#login').style.display='';
-  }
-}
-boot();
+        <!-- Arbejde art + tekst -->
+        <div class="field">
+          <label for="jfType">Arbejdet art <span class="subtle">(påkrævet for at sende)</span></label>
+          <input id="jfType" class="input" type="text" placeholder="Fx Service, Olieskift, Kædeskift">
+        </div>
+        <div class="field">
+          <label for="jfCustomer">Kunde/modtager</label>
+          <input id="jfCustomer" class="input" type="text" placeholder="Hvem er opgaven udført hos?">
+        </div>
 
-// LOGIN
-$('#btnLogin').addEventListener('click', async ()=>{
-  const username=$('#lu').value.trim().toLowerCase();
-  const code=$('#lp').value.trim();
-  const r=await api('/api/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({username,code})});
-  const d=await r.json();
-  if(d.success && d.role==='user'){
-    session.set({role:'user',username, name:d.name});
-    location.reload();
-  }else{
-    $('#lmsg').textContent='Forkert brugernavn eller kode'; $('#lmsg').style.display='block';
-  }
-});
+        <div class="field-12">
+          <label for="jfDesc">Fejlbeskrivelse / Udført arbejde</label>
+          <textarea id="jfDesc" class="input" placeholder="Kort beskrivelse af arbejde / fejl"></textarea>
+        </div>
 
-// GEM
-$('#btnSave').addEventListener('click', async ()=>{
-  const s=session.get(); if(!s) return;
-  const fields = collect();
-  const ok = await saveCard(s.username, fields, false);
-  alert(ok?'Gemt':'Fejl – kunne ikke gemme');
-});
+        <!-- Billeder -->
+        <div class="field-12">
+          <label for="jfImages">Billeder (valgfrit)</label>
+          <input id="jfImages" class="input" type="file" accept="image/*" multiple>
+          <div id="imgPreview" class="subtle" style="margin-top:8px"></div>
+        </div>
 
-// SEND
-$('#btnSend').addEventListener('click', async ()=>{
-  const s=session.get(); if(!s) return;
-  const fields = collect();
-  // kræv påkrævede felter
-  for (const rf of (settings.requiredFields||[])) {
-    if(!fields[rf] || String(fields[rf]).trim()===''){ alert('Udfyld: '+rf); return; }
-  }
-  const ok = await saveCard(s.username, fields, true);
-  if(!ok){ alert('Kunne ikke markere som sendt'); return; }
+        <div class="actions">
+          <button type="button" id="btnSaveDraft" class="btn">Gem kladde</button>
+          <button type="submit" id="btnSend" class="btn btn-primary">Gem & send</button>
+          <button type="button" id="btnReset" class="btn btn-ghost">Nulstil</button>
+          <span class="info" id="formInfo" style="display:none;"></span>
+        </div>
+      </form>
+    </section>
+  </main>
 
-  const to=(settings.emailTo||[]).join(',');
-  const subj = encodeURIComponent(`${settings.mailSubjectPrefix} – ${fields.dato} – ${fields.kunde||''}`);
-  const body = encodeURIComponent(formatMail(fields));
-  location.href=`mailto:${to}?subject=${subj}&body=${body}`;
-});
+  <footer class="footer">© Bredsgaard A/S</footer>
 
-function collect(){
-  const cons={}, inputs=document.querySelectorAll('[data-cons]');
-  inputs.forEach(i=>{const v=i.value.trim(); if(v) cons[i.dataset.cons]=v;});
-  return {
-    dato: $('#d_dato').value,
-    kunde: $('#d_kunde').value,
-    vnr: $('#d_vnr').value,
-    maskin: $('#d_maskin').value,
-    timer: $('#d_timer').value,
-    km: $('#d_km').value,
-    svej: $('#d_svej').value,
-    elk: $('#d_elk').value,
-    diesel: $('#d_diesel').value,
-    norm: $('#d_norm').value,
-    over: $('#d_over').value,
-    arbejdet_art: $('#d_art').value,
-    udfoert: $('#d_udf').value,
-    consumables: cons
-  };
-}
+  <script>
+    const $ = (q)=>document.querySelector(q);
 
-async function saveCard(user, fields, markSent){
-  const res = await api(`/api/cards?user=${encodeURIComponent(user)}`,{
-    method:'POST',
-    headers:{'content-type':'application/json','x-user':user},
-    body:JSON.stringify({ fields, dateISO: fields.dato, sent: !!markSent })
-  });
-  return res.ok;
-}
+    // Aktiv nav
+    (function markActive(){
+      const here = location.pathname.split('/').pop() || 'index.html';
+      document.querySelectorAll('.nav-link').forEach(a=>{
+        if(a.getAttribute('href')===here){ a.classList.add('active'); }
+      });
+    })();
 
-function formatMail(f){
-  const lines=[];
-  lines.push(`Dato: ${f.dato}`);
-  lines.push(`Kunde: ${f.kunde}`);
-  lines.push(`Varenr.: ${f.vnr}`);
-  lines.push(`Maskin nr: ${f.maskin}`);
-  lines.push(`Maskintimer: ${f.timer}`);
-  lines.push(`Kørte km: ${f.km}`);
-  lines.push(`Svejsning (timer): ${f.svej}`);
-  lines.push(`Elektroder (stk): ${f.elk}`);
-  lines.push(`Diesel (liter): ${f.diesel}`);
-  lines.push(`Normal timer: ${f.norm}`);
-  lines.push(`Overtimer: ${f.over}`);
-  lines.push(`Arbejdet art: ${f.arbejdet_art}`);
-  lines.push(``);
-  lines.push(`Udført arbejde:`);
-  lines.push(f.udfoert || '-');
-  lines.push(``);
-  const c = f.consumables||{};
-  if(Object.keys(c).length){ lines.push('Forbrug:'); for(const k in c) lines.push(`- ${k}: ${c[k]}`); lines.push(''); }
-  lines.push(settings.mailFooter||'');
-  return lines.join('\n');
-}
+    // Dags dato
+    (function setToday(){
+      const d = new Date();
+      const pad = n=>String(n).padStart(2,'0');
+      const iso = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+      $('#jfDate').value = iso;
+    })();
 
-// HISTORIK
-$('#btnHist').addEventListener('click', async ()=>{
-  $('#dash').style.display='none'; $('#hist').style.display='';
-  await loadHist();
-});
-$('#btnBack').addEventListener('click', ()=>{ $('#hist').style.display='none'; $('#dash').style.display=''; });
-$('#range').addEventListener('change', loadHist);
+    // Billede-preview
+    $('#jfImages').addEventListener('change', ()=>{
+      const wrap = $('#imgPreview'); wrap.innerHTML='';
+      [...$('#jfImages').files].slice(0,6).forEach(file=>{
+        const url = URL.createObjectURL(file);
+        const img = new Image(); img.src = url; img.style.maxHeight='80px'; img.style.marginRight='8px';
+        img.style.borderRadius='8px'; img.style.border='1px solid #e5e7eb';
+        const holder = document.createElement('span'); holder.style.display='inline-block'; holder.style.margin='6px 6px 0 0';
+        holder.appendChild(img); wrap.appendChild(holder);
+      });
+    });
 
-async function loadHist(){
-  const s=session.get(); if(!s) return;
-  const days=$('#range').value;
-  const d=await (await api(`/api/cards?user=${encodeURIComponent(s.username)}&sinceDays=${days}`)).json();
-  const tb=$('#tbl tbody'); tb.innerHTML='';
-  d.forEach(c=>{
-    const tr=document.createElement('tr');
-    tr.innerHTML=`<td>${c.dateISO.slice(0,10)}</td><td>${c.fields.kunde||''}</td><td>${c.fields.arbejdet_art||''}</td><td>${c.sent?'Sendt':'Gemt'}</td>`;
-    tb.append(tr);
-  });
-}
+    // Nulstil
+    $('#btnReset').addEventListener('click', ()=>{
+      $('#job-form').reset(); $('#imgPreview').innerHTML=''; $('#formInfo').style.display='none';
+      // Sæt dato igen
+      const d = new Date(); const pad = n=>String(n).padStart(2,'0');
+      $('#jfDate').value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    });
 
-// LOGOUT
-$('#btnLogout').addEventListener('click', ()=>{ session.clear(); location.reload(); });
-</script>
-</body></html>
+    // Gem kladde (kun UI-demo – koble til dit /api, hvis ønsket)
+    $('#btnSaveDraft').addEventListener('click', ()=>{
+      $('#formInfo').textContent = 'Kladde gemt lokalt (demo).';
+      $('#formInfo').style.display='inline-flex';
+      // localStorage.setItem('draft', JSON.stringify(...))  // valgfrit
+    });
+
+    // Valider at “Arbejdet art” er udfyldt før send
+    document.getElementById('job-form').addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const type = $('#jfType').value.trim();
+      if(!type){
+        $('#formInfo').textContent = 'Udfyld “Arbejdet art” for at kunne sende.';
+        $('#formInfo').style.display='inline-flex';
+        $('#jfType').focus();
+        return;
+      }
+      // TODO: Kald din rigtige send/mail-API
+      $('#formInfo').textContent = 'Sendt (demo).';
+      $('#formInfo').style.display='inline-flex';
+    });
+  </script>
+</body>
+</html>
+
