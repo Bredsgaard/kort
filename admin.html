@@ -19,43 +19,42 @@
 </header>
 
 <main>
-  <!-- ADMIN LOCK med brugernavn + kode -->
-  <section id="adminLock" class="card" autocomplete="off">
+  <!-- Admin login -->
+  <section id="adminLock" class="card">
     <h2>Admin adgang</h2>
-    <div class="grid-2">
-      <div>
-        <label>Admin-brugernavn</label>
-        <input id="adminUser" placeholder="Bonde"
-               autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false" />
+    <form id="adminForm" autocomplete="off">
+      <div class="grid-2">
+        <div>
+          <label>Admin-brugernavn</label>
+          <input id="adminUser" placeholder="Bonde" autocomplete="off" autocapitalize="off" />
+        </div>
+        <div>
+          <label>Admin-kode</label>
+          <input type="password" id="adminPin" inputmode="numeric" pattern="[0-9]*" placeholder="••••" autocomplete="new-password" />
+        </div>
       </div>
-      <div>
-        <label>Admin-kode</label>
-        <input type="password" id="adminPin" inputmode="numeric" pattern="[0-9]*"
-               placeholder="••••" autocomplete="new-password" autocapitalize="off"
-               autocorrect="off" spellcheck="false" />
+      <div class="actions">
+        <button class="primary" id="adminUnlock" type="submit">Lås op</button>
       </div>
-    </div>
-    <div class="actions">
-      <button class="primary" id="adminUnlock">Lås op</button>
-    </div>
-    <p id="adminMsg" class="danger" style="display:none;margin-top:8px"></p>
+      <p id="adminMsg" class="danger" style="display:none;margin-top:8px"></p>
+    </form>
   </section>
 
-  <!-- INDSTILLINGER -->
-  <section id="panel" class="card" style="display:none" autocomplete="off">
+  <!-- Indstillinger -->
+  <section id="panel" class="card" style="display:none">
     <h2>Indstillinger</h2>
 
     <label>App-navn (vises i toppen)</label>
-    <input id="appName" placeholder="Fx Bredsgaard Arbejdskort" />
+    <input id="appName" placeholder="Fx Bredsgaard Arbejdskort" autocomplete="off" />
 
     <div class="grid-2">
       <div>
         <label>Standard modtager-e-mails (komma-separeret)</label>
-        <input id="emails" placeholder="pb@bredsgaard.dk, vaerksted@..." />
+        <input id="emails" placeholder="pb@bredsgaard.dk, vaerksted@..." autocomplete="off" />
       </div>
       <div>
         <label>Emne-prefix</label>
-        <input id="subjectPrefix" placeholder="Arbejdskort" />
+        <input id="subjectPrefix" placeholder="Arbejdskort" autocomplete="off" />
       </div>
     </div>
 
@@ -76,7 +75,7 @@
           <label><input type="checkbox" class="req" value="location"> Lokation</label>
           <label><input type="checkbox" class="req" value="machineNo"> Maskin nr</label>
           <label><input type="checkbox" class="req" value="machine"> Maskine/Model</label>
-          <label><input type="checkbox" class="req" value="work"> Arbejdets art</label>
+          <label><input type="checkbox" class="req" value="work"> Arbejdet art</label>
           <label><input type="checkbox" class="req" value="fault"> Fejlbeskrivelse</label>
           <label><input type="checkbox" class="req" value="done"> Udført arbejde</label>
           <label><input type="checkbox" class="req" value="hours"> Normal timer</label>
@@ -91,29 +90,46 @@
       </div>
     </div>
 
+    <label>Arbejdstyper (én pr. linje)</label>
+    <textarea id="workPresets" rows="3" placeholder="Service&#10;Olieskift&#10;Kædeskift"></textarea>
+
+    <h3 style="margin-top:16px">Forbrugsliste</h3>
+    <div class="grid-3">
+      <input id="consName" placeholder="Navn (fx Olie)" />
+      <input id="consUnit" placeholder="Enhed (fx L / stk)" />
+      <button id="consAdd" type="button">Tilføj</button>
+    </div>
+    <div class="tableWrap" style="margin-top:8px">
+      <table class="table">
+        <thead><tr><th>Navn</th><th>Enhed</th><th>Handling</th></tr></thead>
+        <tbody id="consTable"></tbody>
+      </table>
+    </div>
+
     <div class="actions">
-      <button class="primary" id="saveCfg">Gem indstillinger</button>
-      <button id="resetCfg">Nulstil</button>
+      <button class="primary" id="saveCfg" type="button">Gem indstillinger</button>
+      <button id="resetCfg" type="button">Nulstil</button>
     </div>
   </section>
 
-  <!-- BRUGERE -->
-  <section id="usersCard" class="card" style="display:none" autocomplete="off">
+  <!-- Brugere -->
+  <section id="usersCard" class="card" style="display:none">
     <h2>Brugere</h2>
-    <div class="grid-3">
-      <div><label>Navn</label><input id="uName" placeholder="Fx Per Bonde" /></div>
-      <div><label>Brugernavn</label><input id="uUsername" placeholder="fx pbo" autocapitalize="off" /></div>
-      <div>
-        <label>Ny kode (valgfri ved redigering)</label>
-        <input type="password" id="uCode" placeholder="••••" inputmode="numeric" pattern="[0-9]*"
-               autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false" />
+    <form id="userForm" autocomplete="off">
+      <div class="grid-3">
+        <div><label>Navn</label><input id="uName" placeholder="Fx Per Bonde" autocomplete="off"/></div>
+        <div><label>Brugernavn</label><input id="uUsername" placeholder="fx pbo" autocomplete="off" autocapitalize="off"/></div>
+        <div>
+          <label>Ny kode (valgfri ved redigering)</label>
+          <input type="password" id="uCode" placeholder="••••" inputmode="numeric" pattern="[0-9]*" autocomplete="new-password" />
+        </div>
       </div>
-    </div>
-
-    <div class="actions" style="margin-top:10px">
-      <button class="primary" id="addUser">Tilføj / Opdatér</button>
-      <button id="clearInputs">Ryd</button>
-    </div>
+      <div class="actions" style="margin-top:10px">
+        <button class="primary" id="addUser" type="submit">Tilføj / Opdatér</button>
+        <button id="clearInputs" type="button">Ryd</button>
+      </div>
+      <p id="userMsg" style="display:none"></p>
+    </form>
 
     <div class="tableWrap">
       <table class="table">
@@ -124,15 +140,15 @@
 
     <h3 style="margin-top:16px">Backup & flytning</h3>
     <div class="actions">
-      <button id="exportUsers" class="secondary">Export Brugere+Indstillinger (JSON)</button>
+      <button id="exportUsers" class="secondary" type="button">Export Brugere+Indstillinger (JSON)</button>
       <input type="file" id="importUsersFile" accept="application/json" style="display:none">
-      <button id="importUsers" class="secondary">Import Brugere+Indstillinger</button>
+      <button id="importUsers" class="secondary" type="button">Import Brugere+Indstillinger</button>
     </div>
 
     <div class="actions" style="margin-top:8px">
-      <button id="exportCards" class="secondary">Export Arbejdskort (JSON)</button>
+      <button id="exportCards" class="secondary" type="button">Export Arbejdskort (JSON)</button>
       <input type="file" id="importCardsFile" accept="application/json" style="display:none">
-      <button id="importCards" class="secondary">Import Arbejdskort</button>
+      <button id="importCards" class="secondary" type="button">Import Arbejdskort</button>
     </div>
     <p class="hint">Incognito har sit eget lager – brug export/import for at flytte data.</p>
   </section>
@@ -145,9 +161,9 @@
   const ADMIN_CODE = '0705';
   const ADMIN_USERNAME = 'Bonde';
 
-  const LS_ADMIN = 'ak_admin_v3';
-  const LS_USERS = 'ak_users_v2';
-  const LS_CARDS = 'ak_cards_v2';
+  const LS_ADMIN = 'ak_admin_v4';  // bump
+  const LS_USERS = 'ak_users_v3';
+  const LS_CARDS = 'ak_cards_v3';
 
   const $ = s => document.querySelector(s);
   const getCfg   = () => JSON.parse(localStorage.getItem(LS_ADMIN) || '{}');
@@ -157,35 +173,30 @@
   const getCards = () => JSON.parse(localStorage.getItem(LS_CARDS) || '[]');
   const setCards = v  => localStorage.setItem(LS_CARDS, JSON.stringify(v));
 
-  document.addEventListener('DOMContentLoaded', () => {
-    const pin = $('#adminPin'); if (pin) { pin.value=''; pin.form && (pin.form.autocomplete='off'); }
-  });
-
   function ensureAdminUser(){
     const arr = getUsers();
     const i = arr.findIndex(u => (u.username||'').toLowerCase() === ADMIN_USERNAME.toLowerCase());
-    if (i < 0) {
-      arr.push({ name: 'Admin', username: ADMIN_USERNAME, code: ADMIN_CODE, active: true, system: true });
-      setUsers(arr);
-    } else { arr[i].active = true; arr[i].system = true; setUsers(arr); }
+    if (i < 0) arr.push({ name: 'Admin', username: ADMIN_USERNAME, code: ADMIN_CODE, active: true, system: true });
+    else { arr[i].active = true; arr[i].system = true; }
+    setUsers(arr);
   }
   ensureAdminUser();
 
-  // Admin unlock: kræver korrekt brugernavn + kode
-  $('#adminUnlock').onclick = () => {
+  // Login
+  $('#adminForm').addEventListener('submit', (e)=>{
+    e.preventDefault();
     const un = ($('#adminUser').value||'').trim().toLowerCase();
     const pin = ($('#adminPin').value||'').trim();
     if (un === ADMIN_USERNAME.toLowerCase() && pin === ADMIN_CODE) {
       $('#adminLock').style.display='none';
       $('#panel').style.display='';
       $('#usersCard').style.display='';
-      load();
-    } else {
-      $('#adminMsg').textContent='Forkert admin-brugernavn eller kode.'; $('#adminMsg').style.display='block';
-    }
-  };
+      loadCfg(); renderUsers(); renderCons(getCfg().consumables||[]);
+    } else { $('#adminMsg').textContent='Forkert admin-brugernavn eller kode.'; $('#adminMsg').style.display='block'; }
+  });
 
-  function load(){
+  // Indstillinger load/save
+  function loadCfg(){
     const c=getCfg();
     $('#appTitle').textContent = c.appName || 'Admin';
     $('#appName').value = c.appName || 'Bredsgaard Arbejdskort';
@@ -193,25 +204,53 @@
     $('#subjectPrefix').value = c.subjectPrefix || 'Arbejdskort';
     $('#footer').value = c.footer || 'Ref.: {dato} – {medarbejder}';
     $('#retentionDays').value = c.retentionDays || 7;
+    $('#workPresets').value = (c.workPresets||[]).join('\n');
     document.querySelectorAll('.req').forEach(cb => cb.checked = (c.requiredFields||[]).includes(cb.value));
-    renderUsers();
   }
 
   $('#saveCfg').onclick = () => {
+    const c = getCfg();
     const required = [...document.querySelectorAll('.req')].filter(cb=>cb.checked).map(cb=>cb.value);
+    const presets = ($('#workPresets').value||'').split('\n').map(s=>s.trim()).filter(Boolean);
     setCfg({
+      ...c,
       appName: $('#appName').value.trim(),
       emails: $('#emails').value.trim(),
       subjectPrefix: ($('#subjectPrefix').value.trim() || 'Arbejdskort'),
       footer: $('#footer').value,
       retentionDays: Math.max(1, parseInt($('#retentionDays').value||'7',10)),
-      requiredFields: required
+      requiredFields: required,
+      workPresets: presets,
+      consumables: c.consumables || []
     });
     alert('Indstillinger gemt.');
   };
 
-  $('#resetCfg').onclick = () => { localStorage.removeItem(LS_ADMIN); load(); };
+  $('#resetCfg').onclick = () => { localStorage.removeItem(LS_ADMIN); loadCfg(); };
 
+  // Forbrugsliste
+  function renderCons(arr){
+    const tb = $('#consTable'); tb.innerHTML='';
+    arr.forEach((x,i)=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td>${x.name}</td><td>${x.unit}</td>
+      <td><button data-i="${i}" class="del danger">Slet</button></td>`;
+      tb.appendChild(tr);
+    });
+    tb.querySelectorAll('.del').forEach(b=>b.onclick=e=>{
+      const i=+e.target.dataset.i; const c=getCfg(); (c.consumables||[]).splice(i,1); setCfg(c); renderCons(c.consumables||[]);
+    });
+  }
+
+  $('#consAdd').onclick=()=>{
+    const name=($('#consName').value||'').trim(), unit=($('#consUnit').value||'').trim();
+    if(!name) return;
+    const c=getCfg(); c.consumables = c.consumables||[];
+    c.consumables.push({id:crypto.randomUUID?crypto.randomUUID():Date.now().toString(36), name, unit});
+    setCfg(c); renderCons(c.consumables); $('#consName').value=''; $('#consUnit').value='';
+  };
+
+  // Brugere
   function renderUsers(){
     const tbody = $('#usersTable'); tbody.innerHTML='';
     getUsers().forEach((u,i)=>{
@@ -231,7 +270,7 @@
 
     tbody.querySelectorAll('.edit').forEach(b=>b.onclick=e=>{
       const u=getUsers()[+e.target.dataset.i];
-      $('#uName').value=u.name; $('#uUsername').value=u.username; $('#uCode').value='';
+      $('#uName').value=u.name||''; $('#uUsername').value=u.username||''; $('#uCode').value='';
     });
 
     tbody.querySelectorAll('.toggle').forEach(b=>b.onclick=e=>{
@@ -247,15 +286,19 @@
     });
   }
 
-  $('#addUser').onclick = () => {
-    const name=$('#uName').value.trim(),
-          username=$('#uUsername').value.trim(),
-          newCode=$('#uCode').value.trim();
+  function normalizeUsername(s){ return s.replace(/\s+/g,'').toLowerCase(); }
 
-    if(!name||!username) return alert('Udfyld navn og brugernavn');
+  $('#userForm').addEventListener('submit', (e)=>{
+    e.preventDefault();
+    const name=($('#uName').value||'').trim();
+    const usernameRaw=($('#uUsername').value||'').trim();
+    const username = normalizeUsername(usernameRaw);
+    const newCode=($('#uCode').value||'').trim();
+
+    if(!name || !username){ return msg('Udfyld navn og brugernavn.'); }
 
     const arr=getUsers();
-    const i=arr.findIndex(u=> (u.username||'').toLowerCase()===username.toLowerCase());
+    const i=arr.findIndex(u=> normalizeUsername(u.username||'')===username);
 
     if(i>=0){
       arr[i].name = name;
@@ -263,17 +306,18 @@
       if (newCode) arr[i].code = newCode;
       arr[i].active = true;
     } else {
-      if(!newCode) return alert('Angiv en kode for nye brugere');
+      if(!newCode) return msg('Angiv en kode for nye brugere.');
       arr.push({name, username, code:newCode, active:true});
     }
     setUsers(arr); renderUsers();
-    $('#uCode').value='';
-    alert('Bruger gemt.');
-  };
+    $('#uCode').value=''; $('#uName').value=''; $('#uUsername').value='';
+    msg('Bruger gemt.');
+  });
 
   $('#clearInputs').onclick = ()=>{ $('#uName').value=''; $('#uUsername').value=''; $('#uCode').value=''; };
+  function msg(t){ const p=$('#userMsg'); p.textContent=t; p.style.display='block'; setTimeout(()=>p.style.display='none',2000); }
 
-  // Export / Import
+  // Export/Import
   function download(filename, obj){
     const blob = new Blob([JSON.stringify(obj,null,2)], {type:'application/json'});
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click();
@@ -289,7 +333,8 @@
       const d = JSON.parse(await f.text());
       if (d.settings) setCfg(d.settings);
       if (d.users) setUsers(d.users);
-      alert('Brugere og indstillinger er importeret.'); load();
+      loadCfg(); renderUsers(); renderCons(getCfg().consumables||[]);
+      alert('Import OK.');
     } catch { alert('Kunne ikke importere filen.'); }
     e.target.value='';
   });
@@ -308,3 +353,4 @@
 </script>
 </body>
 </html>
+
