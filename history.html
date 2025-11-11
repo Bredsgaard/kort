@@ -1,104 +1,170 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="da">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Tidligere arbejdskort – Arbejdskort</title>
-  <link rel="stylesheet" href="css/style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tidligere arbejdskort</title>
+  <link rel="stylesheet" href="css/style.css"/>
 </head>
 <body>
-
   <header class="topbar">
-    <div class="container bar">
+    <div class="topbar-inner">
       <div class="brand">Arbejdskort</div>
       <nav class="nav">
-        <a class="nav-link" href="index.html">Nyt arbejdskort</a>
-        <a class="nav-link active" href="history.html">Tidligere kort</a>
-        <a class="nav-link" href="admin.html">Admin</a>
+        <a href="index.html">Nyt kort</a>
+        <a href="history.html">Tidligere</a>
+        <a href="admin.html">Admin</a>
+        <span data-userchip class="userchip"></span>
+        <button id="logoutBtn" class="btn" hidden>Log ud</button>
       </nav>
     </div>
   </header>
 
   <main class="container">
-    <section class="card" aria-labelledby="histTitle">
-      <h1 class="card-title" id="histTitle">Tidligere arbejdskort</h1>
 
-      <!-- Filter -->
-      <div class="form-grid" style="margin-bottom:10px">
-        <div class="field">
-          <label for="fltPeriod">Periode</label>
-          <select id="fltPeriod" class="input">
+    <!-- LOGIN BLOK -->
+    <section id="login-block" class="card" hidden>
+      <h1>Log ind</h1>
+      <form id="login-form" class="grid" autocomplete="off">
+        <div class="col-6">
+          <label class="req">Brugernavn</label>
+          <input id="empUser" placeholder="fx bh" required>
+        </div>
+        <div class="col-6">
+          <label class="req">Kode</label>
+          <input id="empPin" type="password" inputmode="numeric" placeholder="4 cifre" required>
+        </div>
+        <div class="col-12" style="display:flex;gap:10px;align-items:end;">
+          <button class="btn primary" type="submit">Log ind</button>
+        </div>
+        <div class="col-12 helper" id="loginErr" style="color:#c00;"></div>
+      </form>
+    </section>
+
+    <!-- LISTE BLOK -->
+    <section id="app-block" class="card" hidden>
+      <h1>Tidligere arbejdskort</h1>
+
+      <!-- Filtre -->
+      <div class="grid">
+        <div class="col-3">
+          <label for="period">Periode</label>
+          <select id="period">
             <option value="7">Seneste 7 dage</option>
             <option value="14">Seneste 14 dage</option>
             <option value="30" selected>Seneste 30 dage</option>
-            <option value="90">Seneste 3 mdr</option>
+            <option value="60">Seneste 60 dage</option>
+            <option value="365">Seneste 12 mdr</option>
+            <option value="99999">Alle</option>
           </select>
         </div>
-        <div class="field">
-          <label for="fltUser">Bruger</label>
-          <input id="fltUser" class="input" type="text" placeholder="Filtrér på brugernavn (valgfrit)">
-        </div>
-        <div class="actions">
-          <button id="btnRefresh" class="btn btn-primary">Opdater</button>
-          <span class="subtle" id="statusMsg"></span>
+        <div class="col-3">
+          <label for="status">Status</label>
+          <select id="status">
+            <option value="all" selected>Alle</option>
+            <option value="sent">Sendt</option>
+            <option value="draft">Kladde</option>
+          </select>
         </div>
       </div>
 
-      <!-- Tabel -->
-      <div class="field-12">
-        <table class="table" id="tbl">
-          <thead>
-            <tr>
-              <th>Dato</th>
-              <th>Bruger</th>
-              <th>Kunde</th>
-              <th>Arbejdet art</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="tblBody">
-            <!-- rækker indlæses via JS -->
-          </tbody>
-        </table>
-      </div>
+      <p class="helper" style="margin-top:10px;">Viser <span id="count">0</span> kort.</p>
+
+      <table class="table" aria-describedby="count">
+        <thead>
+          <tr>
+            <th>Dato</th>
+            <th>Bruger</th>
+            <th>Kunde</th>
+            <th>Maskinnr.</th>
+            <th>Arbejdet</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
     </section>
+
   </main>
 
-  <footer class="footer">© Bredsgaard A/S</footer>
+  <footer>© Bredsgaard – Arbejdskort system</footer>
 
-  <script>
-    const $ = (q)=>document.querySelector(q);
-    (function markActive(){
-      const here = location.pathname.split('/').pop() || 'index.html';
-      document.querySelectorAll('.nav-link').forEach(a=>{
-        if(a.getAttribute('href')===here){ a.classList.add('active'); }
-      });
-    })();
+  <script type="module">
+    import { guardOrShowLogin, employeeLogin, logoutAndReload, isLoggedIn, getSessionUser } from "./js/auth.js";
+    import { getCards, formatDate } from "./js/app.js";
 
-    // Demo-data – byt til dit /api (fx /api/cards?days=30&user=...)
-    function loadData(days, user){
-      // Mockede rækker
-      const rows = [
-        {date:'2025-02-01', user:'bh', customer:'Kunde A', type:'Service', status:'Sendt'},
-        {date:'2025-02-02', user:'bh', customer:'Kunde B', type:'Olieskift', status:'Kladde'},
-        {date:'2025-02-03', user:'pbo', customer:'Kunde C', type:'Kædeskift', status:'Sendt'},
-      ].filter(r => !user || r.user.toLowerCase().includes(user.toLowerCase()));
+    // Gate
+    guardOrShowLogin("login-block", "app-block");
+    document.getElementById("logoutBtn").hidden = !isLoggedIn();
 
-      const body = $('#tblBody'); body.innerHTML='';
-      rows.forEach(r=>{
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${r.date}</td><td>${r.user}</td><td>${r.customer}</td><td>${r.type}</td><td>${r.status}</td>`;
-        body.appendChild(tr);
-      });
-      $('#statusMsg').textContent = `Viser ${rows.length} kort (demo).`;
-    }
-
-    $('#btnRefresh').addEventListener('click', ()=>{
-      loadData($('#fltPeriod').value, $('#fltUser').value.trim());
+    // Login
+    document.getElementById("login-form")?.addEventListener("submit", async (e)=>{
+      e.preventDefault();
+      const u = document.getElementById("empUser").value.trim();
+      const p = document.getElementById("empPin").value.trim();
+      const err = document.getElementById("loginErr");
+      err.textContent = "";
+      try {
+        await employeeLogin(u,p);
+        guardOrShowLogin("login-block", "app-block");
+        document.getElementById("logoutBtn").hidden = !isLoggedIn();
+        render();
+      } catch(ex){
+        err.textContent = ex.message || "Login fejlede.";
+      }
     });
 
-    // Første indlæsning
-    loadData($('#fltPeriod').value, $('#fltUser').value.trim());
+    // Log ud
+    document.getElementById("logoutBtn")?.addEventListener("click", logoutAndReload);
+
+    // Filtre
+    document.getElementById("period")?.addEventListener("change", render);
+    document.getElementById("status")?.addEventListener("change", render);
+
+    // Første render hvis allerede logget ind
+    if (isLoggedIn()) render();
+
+    function render(){
+      const u = getSessionUser();
+      if (!u) return;
+
+      // vis bruger i top
+      const chip = document.querySelector("[data-userchip]");
+      if (chip) chip.textContent = `${u.name} (${u.username})`;
+
+      const days = +document.getElementById("period").value;
+      const status = document.getElementById("status").value; // all/sent/draft
+
+      const all = getCards(u.username);
+      const cutoff = Date.now() - days * 24*60*60*1000;
+
+      const rows = all.filter(c => {
+        const inPeriod = days >= 99999 ? true : (new Date(c.date).getTime() >= cutoff);
+        const inStatus = status === "all" ? true : (status === "sent" ? c.sent === true : c.sent === false);
+        return inPeriod && inStatus;
+      }).sort((a,b) => (new Date(b.date)) - (new Date(a.date)));
+
+      const tbody = document.getElementById("tbody");
+      tbody.innerHTML = "";
+      rows.forEach(c=>{
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${formatDate(c.date)}</td>
+          <td>${u.username}</td>
+          <td>${c.customer || "-"}</td>
+          <td>${c.machineNo || "-"}</td>
+          <td>${c.workType || "-"}</td>
+          <td>
+            <span class="badge ${c.sent ? "sent" : "draft"}">
+              ${c.sent ? "Sendt" : "Kladde"}
+            </span>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById("count").textContent = rows.length;
+    }
   </script>
 </body>
 </html>
