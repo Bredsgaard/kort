@@ -1,329 +1,37 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="da">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Admin – Arbejdskort</title>
-  <link rel="stylesheet" href="css/style.css"/>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/api/_util.js"></script>
+  <script src="/api/login.js"></script>
+  <script src="/api/cards.js"></script>
+  <script src="/api/settings.js"></script>
 </head>
 <body>
-  <header class="topbar">
-    <div class="topbar-inner">
-      <div class="brand" data-appname>Arbejdskort</div>
-      <nav class="nav">
-        <a href="index.html">Nyt kort</a>
-        <a href="history.html">Tidligere</a>
-        <a href="admin.html">Admin</a>
-        <span data-userchip class="userchip"></span>
-        <button id="logoutBtn" class="btn" hidden>Log ud</button>
-      </nav>
+  <div class="header">
+    <h1 id="apptitle">Admin</h1>
+    <div class="nav"><a class="button" href="/">Medarbejder</a></div>
+  </div>
+  <div class="container">
+    <div id="login" class="card">
+      <h3>Admin-login</h3>
+      <div class="grid">
+        <div class="field third"><label>Admin-brugernavn</label><input id="u" class="input" placeholder="Brugernavn"></div>
+        <div class="field third"><label>Admin-kode</label><input id="p" class="input" type="password" inputmode="numeric" pattern="[0-9]*" placeholder="Kode"></div>
+        <div class="field third" style="align-self:end"><button id="loginBtn" class="button primary">Log ind</button></div>
+      </div>
+      <small class="hint">Koder vises aldrig i klar tekst. Admin-kode (fase 1): 0705</small>
     </div>
-  </header>
+  </div>
 
-  <main class="container">
-
-    <!-- LOGIN TIL ADMIN -->
-    <section id="login-block" class="card">
-      <h1>Admin adgang</h1>
-      <form id="login-form" class="grid" autocomplete="off">
-        <div class="col-4">
-          <label class="req" for="admUser">Admin brugernavn</label>
-          <input id="admUser" placeholder="fx pbo" required>
-        </div>
-        <div class="col-4">
-          <label class="req" for="admPin">Bruger-kode</label>
-          <input id="admPin" type="password" inputmode="numeric" placeholder="4 cifre" required>
-        </div>
-        <div class="col-4">
-          <label class="req" for="admCode">Admin-kode</label>
-          <input id="admCode" type="password" inputmode="numeric" placeholder="0705" required>
-        </div>
-        <div class="col-12" style="display:flex;gap:10px;align-items:end;">
-          <button class="btn primary" type="submit">Lås op</button>
-        </div>
-        <div class="col-12 helper" id="loginErr" style="color:#c00;"></div>
-      </form>
-    </section>
-
-    <!-- ADMIN PANEL -->
-    <section id="app-block" hidden>
-      <!-- Indstillinger -->
-      <div class="card">
-        <h1>Indstillinger</h1>
-        <div class="grid">
-          <div class="col-6">
-            <label class="req" for="appName">App-navn</label>
-            <input id="appName" placeholder="Arbejdskort">
-          </div>
-          <div class="col-6">
-            <label class="req" for="mailTo">Standard e-mail modtager</label>
-            <input id="mailTo" type="email" placeholder="pb@bredsgaard.dk">
-          </div>
-        </div>
-
-        <h2>Påkrævede felter (★)</h2>
-        <div class="grid">
-          <div class="col-3"><label><input type="checkbox" id="req_date"> Dags dato</label></div>
-          <div class="col-3"><label><input type="checkbox" id="req_customer"> Kunde</label></div>
-          <div class="col-3"><label><input type="checkbox" id="req_machineNo"> Maskin nr</label></div>
-          <div class="col-3"><label><input type="checkbox" id="req_workType"> Arbejdet art</label></div>
-
-          <div class="col-3"><label><input type="checkbox" id="req_machineHours"> Maskintimer</label></div>
-          <div class="col-3"><label><input type="checkbox" id="req_drivenKm"> Kørte km</label></div>
-          <div class="col-3"><label><input type="checkbox" id="req_weldingHours"> Svejsning (timer)</label></div>
-          <div class="col-3"><label><input type="checkbox" id="req_electrodes"> Elektroder</label></div>
-
-          <div class="col-3"><label><input type="checkbox" id="req_diesel"> Diesel (liter)</label></div>
-          <div class="col-3"><label><input type="checkbox" id="req_normalHours"> Normal timer</label></div>
-          <div class="col-3"><label><input type="checkbox" id="req_overtimeHours"> Overtimer</label></div>
-          <div class="col-3"><label><input type="checkbox" id="req_description"> Beskrivelse</label></div>
-        </div>
-
-        <div class="actions">
-          <button id="btn-save-settings" class="btn primary">Gem indstillinger</button>
-          <span id="settings-ok" class="helper"></span>
-        </div>
-      </div>
-
-      <!-- Brugere -->
-      <div class="card">
-        <h1>Brugere</h1>
-        <div class="grid">
-          <input type="hidden" id="userIndex">
-          <div class="col-3">
-            <label class="req" for="userName">Navn</label>
-            <input id="userName" placeholder="fx Per Bonde">
-          </div>
-          <div class="col-3">
-            <label class="req" for="userUsername">Brugernavn</label>
-            <input id="userUsername" placeholder="fx pbo">
-          </div>
-          <div class="col-3">
-            <label class="req" for="userPin">Kode (4+ cifre)</label>
-            <input id="userPin" placeholder="kode">
-          </div>
-          <div class="col-3">
-            <label for="userRole">Rolle</label>
-            <select id="userRole">
-              <option value="user">Bruger</option>
-              <option value="admin">Admin</option>
-            </select>
-          </div>
-          <div class="col-12 actions">
-            <button class="btn primary" id="btn-user-add">Tilføj / Opdatér</button>
-            <button class="btn" id="btn-user-clear">Ryd</button>
-          </div>
-        </div>
-
-        <table class="table" style="margin-top:12px;">
-          <thead>
-            <tr>
-              <th>Navn</th>
-              <th>Brugernavn</th>
-              <th>Rolle</th>
-              <th>Aktiv</th>
-              <th>Handling</th>
-            </tr>
-          </thead>
-          <tbody id="usertbody"></tbody>
-        </table>
-      </div>
-    </section>
-
-  </main>
-
-  <footer>© Bredsgaard – Arbejdskort system</footer>
-
-  <script type="module">
-    import { guardOrShowLogin, employeeLogin, logoutAndReload, getSessionUser } from "./js/auth.js";
-    import { getSettings, saveSettings, getUsers, saveUsers } from "./js/app.js";
-
-    const ADMIN_CODE = "0705";
-    let settings = getSettings();
-
-    // Top UI init
-    document.querySelectorAll('[data-appname]').forEach(n=>n.textContent=settings.appName);
-    document.getElementById("logoutBtn").addEventListener("click", logoutAndReload);
-
-    // Admin gate: kræver både admin-bruger OGSÅ admin-kode (0705)
-    guardAdmin();
-
-    // Login submit
-    document.getElementById("login-form").addEventListener("submit", async (e)=>{
-      e.preventDefault();
-      const u = document.getElementById("admUser").value.trim();
-      const p = document.getElementById("admPin").value.trim();
-      const c = document.getElementById("admCode").value.trim();
-      const err = document.getElementById("loginErr");
-      err.textContent = "";
-
-      if (c !== ADMIN_CODE){ err.textContent = "Forkert admin-kode."; return; }
-
-      try{
-        const user = await employeeLogin(u,p);
-        if (user.role !== "admin"){ err.textContent = "Bruger er ikke admin."; return; }
-        guardAdmin();
-      }catch(ex){
-        err.textContent = ex.message || "Login fejlede.";
-      }
-    });
-
-    function guardAdmin(){
-      const u = getSessionUser();
-      const login = document.getElementById("login-block");
-      const app = document.getElementById("app-block");
-      const logoutBtn = document.getElementById("logoutBtn");
-
-      if (u && u.role === "admin"){
-        login.hidden = true;
-        app.hidden = false;
-        logoutBtn.hidden = false;
-        const chip = document.querySelector("[data-userchip]");
-        if (chip) chip.textContent = `${u.name} (${u.username})`;
-        mountSettings();
-        renderUsers();
-      } else {
-        login.hidden = false;
-        app.hidden = true;
-        logoutBtn.hidden = true;
-      }
-    }
-
-    // ---------- Settings ----------
-    function mountSettings(){
-      document.getElementById("appName").value = settings.appName || "Arbejdskort";
-      document.getElementById("mailTo").value = settings.mailTo || "pb@bredsgaard.dk";
-      bindReq(settings.required || {});
-      document.getElementById("btn-save-settings").onclick = onSaveSettings;
-    }
-
-    function bindReq(req){
-      const map = [
-        "date","customer","machineNo","workType",
-        "machineHours","drivenKm","weldingHours","electrodes",
-        "diesel","normalHours","overtimeHours","description"
-      ];
-      map.forEach(key=>{
-        const el = document.getElementById("req_" + key);
-        if (el) el.checked = !!req[key];
-      });
-    }
-
-    function onSaveSettings(){
-      const s = {
-        appName: document.getElementById("appName").value.trim() || "Arbejdskort",
-        mailTo: document.getElementById("mailTo").value.trim() || "pb@bredsgaard.dk",
-        required: {
-          date: !!document.getElementById("req_date").checked,
-          customer: !!document.getElementById("req_customer").checked,
-          machineNo: !!document.getElementById("req_machineNo").checked,
-          workType: !!document.getElementById("req_workType").checked,
-          machineHours: !!document.getElementById("req_machineHours").checked,
-          drivenKm: !!document.getElementById("req_drivenKm").checked,
-          weldingHours: !!document.getElementById("req_weldingHours").checked,
-          electrodes: !!document.getElementById("req_electrodes").checked,
-          diesel: !!document.getElementById("req_diesel").checked,
-          normalHours: !!document.getElementById("req_normalHours").checked,
-          overtimeHours: !!document.getElementById("req_overtimeHours").checked,
-          description: !!document.getElementById("req_description").checked
-        }
-      };
-      settings = s;
-      saveSettings(s);
-      document.querySelectorAll('[data-appname]').forEach(n=>n.textContent=s.appName);
-      const ok = document.getElementById("settings-ok");
-      ok.textContent = "Indstillinger gemt.";
-      setTimeout(()=> ok.textContent = "", 1800);
-    }
-
-    // ---------- Brugere ----------
-    function renderUsers(){
-      const tbody = document.getElementById("usertbody");
-      tbody.innerHTML = "";
-      const users = getUsers();
-      users.forEach((u, idx)=>{
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${u.name}</td>
-          <td>${u.username}</td>
-          <td>${u.role || "user"}</td>
-          <td>${u.active ? "Ja" : "Nej"}</td>
-          <td class="actions">
-            <button class="btn" data-edit="${idx}">Redigér</button>
-            <button class="btn warn" data-toggle="${idx}">${u.active ? "Deaktivér" : "Aktivér"}</button>
-            <button class="btn" data-del="${idx}">Slet</button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-
-      tbody.querySelectorAll("[data-edit]").forEach(b=>b.addEventListener("click", (e)=>{
-        const i = +e.currentTarget.dataset.edit;
-        const u = getUsers()[i];
-        document.getElementById("userIndex").value = i;
-        document.getElementById("userName").value = u.name;
-        document.getElementById("userUsername").value = u.username;
-        document.getElementById("userPin").value = u.pin;
-        document.getElementById("userRole").value = u.role || "user";
-      }));
-
-      tbody.querySelectorAll("[data-toggle]").forEach(b=>b.addEventListener("click", (e)=>{
-        const i = +e.currentTarget.dataset.toggle;
-        const arr = getUsers();
-        arr[i].active = !arr[i].active;
-        saveUsers(arr);
-        renderUsers();
-      }));
-
-      tbody.querySelectorAll("[data-del]").forEach(b=>b.addEventListener("click", (e)=>{
-        const i = +e.currentTarget.dataset.del;
-        const arr = getUsers();
-        arr.splice(i,1);
-        saveUsers(arr);
-        renderUsers();
-      }));
-
-      document.getElementById("btn-user-add").onclick = onAddOrUpdateUser;
-      document.getElementById("btn-user-clear").onclick = ()=>{
-        document.getElementById("userIndex").value = "";
-        document.getElementById("userName").value = "";
-        document.getElementById("userUsername").value = "";
-        document.getElementById("userPin").value = "";
-        document.getElementById("userRole").value = "user";
-      };
-    }
-
-    function onAddOrUpdateUser(){
-      const idx = document.getElementById("userIndex").value;
-      const name = document.getElementById("userName").value.trim();
-      const username = document.getElementById("userUsername").value.trim().toLowerCase();
-      const pin = document.getElementById("userPin").value.trim();
-      const role = document.getElementById("userRole").value;
-
-      if (!name || !username || !pin){ alert("Udfyld Navn, Brugernavn og Kode."); return; }
-
-      const arr = getUsers();
-      if (idx !== ""){
-        // update
-        arr[+idx] = { name, username, pin, role, active: true };
-      } else {
-        // create
-        if (arr.some(u => u.username === username)){
-          alert("Brugernavn findes allerede."); return;
-        }
-        arr.push({ name, username, pin, role, active: true });
-      }
-      saveUsers(arr);
-      renderUsers();
-
-      // clear inputs
-      document.getElementById("userIndex").value = "";
-      document.getElementById("userName").value = "";
-      document.getElementById("userUsername").value = "";
-      document.getElementById("userPin").value = "";
-      document.getElementById("userRole").value = "user";
-    }
-  </script>
+<script>
+ensureDefaults(); setHeaderTitle(document.querySelector('#apptitle'));
+const sess=getSession();
+if(sess && sess.role==='admin'){ document.querySelector('.container').innerHTML=''; buildAdminUI(document.body); }
+document.querySelector('#loginBtn').onclick=async()=>{ const u=document.querySelector('#u').value.trim(); const p=document.querySelector('#p').value.trim(); const s=await adminLogin(u,p); if(!s) return alert('Forkert admin-login.'); document.querySelector('.container').innerHTML=''; buildAdminUI(document.body); };
+</script>
 </body>
 </html>
-
