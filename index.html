@@ -79,5 +79,118 @@
             <label class="req">Normaltimer</label>
             <input id="normalHours" type="number" placeholder="0" required>
           </div>
+          <div class="col-6">
+            <label>Overtimer</label>
+            <input id="overtimeHours" type="number" placeholder="0">
+          </div>
+
+          <div class="col-12">
+            <label class="req">Udført arbejde</label>
+            <textarea id="description" placeholder="Beskriv kort hvad der er udført..." required></textarea>
+          </div>
+
+          <div class="col-12">
+            <label>Billeder (valgfrit)</label>
+            <div class="filebox">
+              <label class="fake" for="images">📷 Vælg billeder</label>
+              <input type="file" id="images" accept="image/*" multiple>
+              <div class="meta">Ingen filer valgt</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="button" id="saveBtn" class="btn ok">Gem kladde</button>
+          <button type="submit" class="btn primary">Gem og send</button>
+        </div>
+      </form>
+    </section>
+
+  </main>
+
+  <footer>© Bredsgaard – Arbejdskort system</footer>
+
+  <script type="module">
+    import { guardOrShowLogin, employeeLogin, logoutAndReload, isLoggedIn, getSessionUser } from "./js/auth.js";
+    import { addOrUpdateCard, id } from "./js/app.js";
+
+    guardOrShowLogin("login-block", "app-block");
+
+    // login
+    document.getElementById("loginBtn")?.addEventListener("click", async () => {
+      const u = document.getElementById("empUser").value;
+      const p = document.getElementById("empPin").value;
+      const err = document.getElementById("loginErr");
+      err.hidden = true;
+      try {
+        await employeeLogin(u, p);
+        guardOrShowLogin("login-block", "app-block");
+        document.getElementById("logoutBtn").hidden = !isLoggedIn();
+      } catch (e) {
+        err.textContent = e.message || "Login fejlede.";
+        err.hidden = false;
+      }
+    });
+
+    // log ud
+    document.getElementById("logoutBtn")?.addEventListener("click", logoutAndReload);
+
+    // håndter billeder
+    const imgInput = document.getElementById("images");
+    imgInput?.addEventListener("change", e => {
+      const meta = document.querySelector(".filebox .meta");
+      const count = e.target.files.length;
+      meta.textContent = count ? `${count} fil${count > 1 ? "er" : ""} valgt` : "Ingen filer valgt";
+    });
+
+    // gem arbejdskort
+    document.getElementById("workForm")?.addEventListener("submit", e => {
+      e.preventDefault();
+      const user = getSessionUser();
+      if (!user) return alert("Log ind først.");
+
+      const card = {
+        id: id(),
+        user: user.username,
+        name: user.name,
+        date: document.getElementById("date").value,
+        machineNo: document.getElementById("machineNo").value,
+        machineHours: document.getElementById("machineHours").value,
+        drivenKm: document.getElementById("drivenKm").value,
+        diesel: document.getElementById("diesel").value,
+        weldingHours: document.getElementById("weldingHours").value,
+        electrodes: document.getElementById("electrodes").value,
+        normalHours: document.getElementById("normalHours").value,
+        overtimeHours: document.getElementById("overtimeHours").value,
+        description: document.getElementById("description").value,
+        sent: true,
+        created: new Date().toISOString()
+      };
+      addOrUpdateCard(user.username, card);
+      alert("Arbejdskort gemt og markeret som sendt.");
+      e.target.reset();
+    });
+
+    // knap til at gemme kladde
+    document.getElementById("saveBtn")?.addEventListener("click", () => {
+      const user = getSessionUser();
+      if (!user) return alert("Log ind først.");
+      const card = {
+        id: id(),
+        user: user.username,
+        name: user.name,
+        date: document.getElementById("date").value,
+        machineNo: document.getElementById("machineNo").value,
+        description: document.getElementById("description").value,
+        sent: false,
+        created: new Date().toISOString()
+      };
+      addOrUpdateCard(user.username, card);
+      alert("Arbejdskort gemt som kladde.");
+    });
+  </script>
+</body>
+</html>
+
 
 
