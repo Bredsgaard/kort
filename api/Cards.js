@@ -1,4 +1,4 @@
-// api/cards.js – v2 (tilføjet: Send via e-mail med krav)
+// cards.js – arbejdskort UI + validering + mailto
 
 function getSettings(){ return load(AK_KEYS.settings, defaultSettings); }
 function getCards(){ return load(AK_KEYS.cards, []); }
@@ -20,12 +20,9 @@ function blankCard(){
 
 function requiredOk(card){
   const s = getSettings();
-  // "Arbejdet art" er altid påkrævet
-  if(!card.arbejdetsArt) return false;
+  if(!card.arbejdetsArt) return false;                         // altid påkrævet
   const req = new Set(s.requiredFields || []);
-  for(const key of req){
-    if(card[key] === undefined || String(card[key]).trim() === "") return false;
-  }
+  for(const key of req){ if(card[key]===undefined || String(card[key]).trim()==="") return false; }
   return true;
 }
 
@@ -95,12 +92,8 @@ function imageUploader(root, card){
   root.appendChild(box); root.appendChild(strip);
 }
 
-// Byg mailen (mailto) – åbner telefonens egen e-mail-app
 function sendMail(card){
-  const s = getSettings();
-  const to = s.emailRecipient || "pb@bredsgaard.dk";
-
-  // Sammensæt en letlæselig brødtekst
+  const s = getSettings(); const to = s.emailRecipient || "pb@bredsgaard.dk";
   const lines = [
     `Dato: ${card.date}`,
     `Maskin nr: ${card.maskinNr}`,
@@ -113,19 +106,15 @@ function sendMail(card){
     `Overtimer: ${card.overtimer}`,
     `Arbejdet art: ${card.arbejdetsArt}`,
     `Forbrug: ${(card.consumables||[]).map(c=>`${c.name} ${c.qty||0} ${c.unit}`).join(', ') || '-'}`,
-    `Billeder: ${card.images?.length||0} (vedhæftning via mailto understøttes normalt ikke)`,
+    `Billeder: ${card.images?.length||0} (mailto vedhæfter normalt ikke)`,
     ``,
     `Fejlbeskrivelse / Udført arbejde:`,
     `${card.beskrivelse||'-'}`
   ];
   const subject = encodeURIComponent(`[Arbejdskort] ${card.date} – ${card.arbejdetsArt||'Uden art'} – ${card.maskinNr||''}`);
   const body = encodeURIComponent(lines.join('\n'));
-
   const href = `mailto:${encodeURIComponent(to)}?subject=${subject}&body=${body}`;
-  // Markér som sendt og gem, så historik viser "Sendt"
-  card.status = 'sent';
-  upsertCard(card);
-  // Åbn e-mail-klienten
+  card.status = 'sent'; upsertCard(card);
   window.location.href = href;
 }
 
@@ -159,37 +148,22 @@ function buildCardForm(root){
   actions.innerHTML=`
     <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
       <button id="saveDraft" class="button">Gem kladde</button>
-      <button id="saveSend" class="button primary">Gem &amp; send (kræver alle felter)</button>
+      <button id="saveSend" class="button primary">Gem &amp; send</button>
       <button id="sendMail" class="button">Send via e-mail</button>
     </div>
-    <small class="hint">"Arbejdet art" er altid påkrævet. Som udgangspunkt er ALLE felter påkrævede – du kan slå fra i Admin → Krav.</small>`;
+    <small class="hint">"Arbejdet art" er altid påkrævet. Som udgangspunkt er ALLE felter påkrævede – kan slås fra i Admin → Krav.</small>`;
 
   function bind(id,key){ const el=section.querySelector('#'+id); el.oninput=()=>{ card[key]=el.value; card.updatedAt=Date.now(); }; }
   [["date","date"],["maskinNr","maskinNr"],["maskintimer","maskintimer"],["km","km"],["svejsningTimer","svejsningTimer"],["elektroder","elektroder"],["diesel","diesel"],["normalTimer","normalTimer"],["overtimer","overtimer"],["arbejdetArt","arbejdetsArt"],["beskrivelse","beskrivelse"]].forEach(([a,b])=>bind(a,b));
 
-  // Vis ★ ved alle nuværende kravfelter
-  req.forEach(key=>{
-    const el = section.querySelector('#'+key);
-    if(el){ const label = el.previousElementSibling; if(label) label.innerHTML = label.textContent + ' <span class="req">★</span>'; }
-  });
+  // Vis ★ ved nuværende kravfelter
+  req.forEach(key=>{ const el=section.querySelector('#'+key); if(el){ const label = el.previousElementSibling; if(label) label.innerHTML = label.textContent + ' <span class="req">★</span>'; } });
 
-  actions.querySelector('#saveDraft').onclick=()=>{
-    card.status='draft'; upsertCard(card); alert('Kladde gemt.'); location.reload();
-  };
+  actions.querySelector('#saveDraft').onclick=()=>{ card.status='draft'; upsertCard(card); alert('Kladde gemt.'); location.reload(); };
+  actions.querySelector('#saveSend').onclick=()=>{ if(!requiredOk(card)) return alert('Udfyld alle påkrævede felter (★) inkl. Arbejdet art.'); card.status='sent'; upsertCard(card); alert('Markeret som sendt.'); location.reload(); };
+  actions.querySelector('#sendMail').onclick=()=>{ if(!requiredOk(card)) return alert('Udfyld alle påkrævede felter (★) inkl. Arbejdet art først.'); sendMail(card); };
 
-  actions.querySelector('#saveSend').onclick=()=>{
-    if(!requiredOk(card)) return alert('Udfyld alle påkrævede felter (★) inkl. Arbejdet art.');
-    card.status='sent'; upsertCard(card); alert('Markeret som sendt.'); location.reload();
-  };
-
-  actions.querySelector('#sendMail').onclick=()=>{
-    if(!requiredOk(card)) return alert('Udfyld alle påkrævede felter (★) inkl. Arbejdet art, før du kan sende e-mail.');
-    sendMail(card);
-  };
-
-  root.appendChild(section);
-  root.appendChild(cons);
-  root.appendChild(imgs);
-  root.appendChild(actions);
+  root.appendChild(section); root.appendChild(cons); root.appendChild(imgs); root.appendChild(actions);
 }
+
 
