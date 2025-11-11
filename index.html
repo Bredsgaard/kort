@@ -12,18 +12,16 @@
     <img src="img/logo.png" alt="" onerror="this.style.display='none'">
     <h1>Dagseddel</h1>
   </div>
-  <nav>
-    <a href="admin.html">Admin</a>
-  </nav>
+  <nav><a href="admin.html">Admin</a></nav>
 </header>
 
 <main>
   <!-- LÅS / LOGIN -->
   <section id="lock" class="card">
     <h2>Log ind med kode</h2>
-    <p class="hint">Indtast din medarbejderkode. Admin kan ændre koder i admin.</p>
+    <p class="hint">Indtast din medarbejderkode. (Admin kan ændre koder i admin)</p>
     <label>Kode</label>
-    <input type="password" id="pin" inputmode="numeric" pattern="[0-9]*" placeholder="••••" autofocus>
+    <input type="password" id="pin" inputmode="numeric" pattern="[0-9]*" placeholder="Fx 1234" required autofocus>
     <div class="actions">
       <button class="primary" id="unlockBtn">Lås op</button>
       <button id="gotoAdmin">Admin (0705)</button>
@@ -46,61 +44,61 @@
         </div>
         <div>
           <label>Medarbejdernavn</label>
-          <input type="text" id="name" placeholder="Dit navn" required />
+          <input type="text" id="name" placeholder="Skriv dit fulde navn" required />
         </div>
       </div>
 
       <label>Kunde / Firma</label>
-      <input type="text" id="customer" placeholder="Fx Jensen Maskinservice" />
+      <input type="text" id="customer" placeholder="Fx Jensen Maskinservice" required />
 
       <div class="grid-2">
         <div>
           <label>Lokation</label>
-          <input type="text" id="location" placeholder="Adresse/By" />
+          <input type="text" id="location" placeholder="Adresse/By" required />
         </div>
         <div>
           <label>Maskine / Model</label>
-          <input type="text" id="machine" placeholder="Fx McConnel PA6565T" />
+          <input type="text" id="machine" placeholder="Fx McConnel PA6565T" required />
         </div>
       </div>
 
-      <label>Arbejdet art <small class="hint">Tip: brug iPhone-tastaturets 🗣️</small></label>
-      <input type="text" id="work" placeholder="Fx Olie + kæde" required />
+      <label>Arbejdet art</label>
+      <input type="text" id="work" placeholder="Fx Olie- og kædeskift" required />
 
       <label>Fejlbeskrivelse</label>
-      <textarea id="fault" rows="3" placeholder="Beskriv fejlen"></textarea>
+      <textarea id="fault" rows="3" placeholder="Kort beskrivelse af fejl" required></textarea>
 
       <label>Udført arbejde</label>
-      <textarea id="done" rows="3" placeholder="Hvad blev lavet?"></textarea>
+      <textarea id="done" rows="3" placeholder="Hvad blev lavet?" required></textarea>
 
       <div class="grid-3">
         <div>
           <label>Normal timer</label>
-          <input type="number" step="0.25" id="hours" value="0" />
+          <input type="number" step="0.25" min="0" id="hours" value="0" required />
         </div>
         <div>
           <label>Maskintimer</label>
-          <input type="number" step="0.25" id="mhours" value="0" />
+          <input type="number" step="0.25" min="0" id="mhours" value="0" required />
         </div>
         <div>
           <label>Kørte km</label>
-          <input type="number" step="0.1" id="km" value="0" />
+          <input type="number" step="0.1" min="0" id="km" value="0" required />
         </div>
       </div>
 
-      <label>Billeder (max 5)</label>
+      <label>Billeder (valgfrit, max 5)</label>
       <input type="file" id="images" accept="image/*" multiple />
       <div id="preview" class="preview"></div>
 
       <label>Noter</label>
-      <textarea id="note" rows="2" placeholder="Evt. bemærkninger"></textarea>
+      <textarea id="note" rows="2" placeholder="Evt. bemærkninger" required></textarea>
 
       <div class="actions">
         <button type="button" id="save">Gem kladde</button>
         <button type="button" id="print">Udskriv / PDF</button>
         <button type="submit" class="primary">Send via e-mail</button>
       </div>
-      <p class="hint">“Send” åbner Mail/Outlook via <code>mailto:</code> på iPhone.</p>
+      <!-- (Tekstlinjen om mailto er fjernet) -->
     </section>
   </form>
 </main>
@@ -117,36 +115,24 @@
   const $ = s => document.querySelector(s);
   const nowDate = () => new Date().toISOString().slice(0,10);
 
-  // --- users storage helpers ---
-  function getUsers(){
-    try { return JSON.parse(localStorage.getItem(LS_USERS)||'[]'); } catch { return []; }
-  }
-  function getAdminCfg(){
-    try { return JSON.parse(localStorage.getItem(LS_ADMIN)||'{}'); } catch { return {}; }
-  }
-  function setActiveUser(u){ localStorage.setItem(LS_ACTIVE_USER, JSON.stringify(u)); }
-  function getActiveUser(){ try { return JSON.parse(localStorage.getItem(LS_ACTIVE_USER)||'null'); } catch { return null; } }
+  // Users / admin config
+  const getUsers = () => { try{return JSON.parse(localStorage.getItem(LS_USERS)||'[]')}catch{return[]} };
+  const getAdminCfg = () => { try{return JSON.parse(localStorage.getItem(LS_ADMIN)||'{}')}catch{return{}} };
+  const setActiveUser = u => localStorage.setItem(LS_ACTIVE_USER, JSON.stringify(u));
+  const getActiveUser = () => { try{return JSON.parse(localStorage.getItem(LS_ACTIVE_USER)||'null')}catch{return null} };
 
-  // --- lock screen ---
+  // Lock
   function tryUnlock(){
     const pin = $('#pin').value.trim();
-    if (!pin) return;
+    if (!pin) { $('#lockMsg').textContent = 'Indtast kode.'; $('#lockMsg').style.display='block'; return; }
 
-    // admin direct
     const adminCode = (getAdminCfg().adminCode || '0705').trim();
-    if (pin === adminCode) {
-      window.location.href = 'admin.html';
-      return;
-    }
+    if (pin === adminCode) { window.location.href = 'admin.html'; return; }
 
     const users = getUsers().filter(u => u.active!==false);
     const hit = users.find(u => String(u.code) === pin);
-    if (!hit) {
-      $('#lockMsg').textContent = 'Ugyldig kode eller bruger ikke aktiv.';
-      $('#lockMsg').style.display = 'block';
-      return;
-    }
-    // success
+    if (!hit) { $('#lockMsg').textContent = 'Ugyldig kode eller bruger ikke aktiv.'; $('#lockMsg').style.display='block'; return; }
+
     setActiveUser(hit);
     showFormFor(hit);
   }
@@ -159,9 +145,9 @@
     $('#date').value = $('#date').value || nowDate();
   }
 
-  // --- draft helpers ---
-  function loadDraft(){ try{return JSON.parse(localStorage.getItem(LS_FORM)||'{}')}catch{return{}} }
-  function saveDraft(v){ localStorage.setItem(LS_FORM, JSON.stringify(v)); }
+  // Draft
+  const loadDraft = () => { try{return JSON.parse(localStorage.getItem(LS_FORM)||'{}')}catch{return{}} };
+  const saveDraft = v => localStorage.setItem(LS_FORM, JSON.stringify(v));
   function fill(v){
     $('#date').value = v.date || nowDate();
     $('#customer').value = v.customer || '';
@@ -191,6 +177,7 @@
       note: $('#note').value.trim()
     };
   }
+
   function buildMail(vals){
     const admin = getAdminCfg();
     const to = (admin.emails || 'vaerksted@bredsgaard.dk').replace(/\s+/g,'');
@@ -198,6 +185,7 @@
     const subject = `${subjectPrefix} – ${vals.date} – ${vals.name} – ${vals.customer || ''}`;
     const footer = (admin.footer || 'Ref.: {dato} – {medarbejder}')
                     .replace('{dato}', vals.date).replace('{medarbejder}', vals.name);
+
     const body = `
 Medarbejder: ${vals.name}
 Dato: ${vals.date}
@@ -228,50 +216,40 @@ ${footer}`.trim();
     return `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   }
 
-  // --- init ---
-  // if a user was active earlier, resume
+  // Init
   const active = getActiveUser();
   if (active) showFormFor(active);
   fill(loadDraft());
 
-  // lock events
+  // Lock events
   $('#unlockBtn').addEventListener('click', tryUnlock);
   $('#pin').addEventListener('keydown', e => { if (e.key==='Enter') tryUnlock(); });
   $('#gotoAdmin').addEventListener('click', () => location.href='admin.html');
 
-  // form events
+  // Form events
   $('#save').addEventListener('click', () => { saveDraft(gather()); alert('Kladde gemt på denne enhed.'); });
   $('#print').addEventListener('click', () => window.print());
   $('#form').addEventListener('submit', e => {
     e.preventDefault();
+
+    // 1) kræv aktiv bruger (PIN)
+    const active = getActiveUser();
+    if (!active) { alert('Du skal låse op med din kode før du kan sende.'); return; }
+
+    // 2) HTML5 validering – kræv alle felter udfyldt
+    const formEl = document.getElementById('form');
+    if (!formEl.reportValidity()) return;
+
+    // 3) Send
     const vals = gather();
-    if (!vals.name || !vals.work) { alert('Udfyld mindst Medarbejdernavn og Arbejdet art.'); return; }
     saveDraft(vals);
     window.location.href = buildMail(vals);
   });
 
-  // images preview
-  const input = $('#images');
-  const preview = $('#preview');
+  // Billeder preview
+  const input = document.getElementById('images');
+  const preview = document.getElementById('preview');
   input.addEventListener('change', () => {
     preview.innerHTML = '';
     [...input.files].slice(0,5).forEach(f => {
-      const img = document.createElement('img');
-      img.src = URL.createObjectURL(f); img.alt = f.name;
-      preview.appendChild(img);
-    });
-  });
-
-  // switch user (lock)
-  $('#switchUser').addEventListener('click', () => {
-    localStorage.removeItem(LS_ACTIVE_USER);
-    $('#form').style.display = 'none';
-    $('#lock').style.display = '';
-    $('#pin').value = '';
-    $('#pin').focus();
-  });
-})();
-</script>
-</body>
-</html>
-
+      const img = do
