@@ -18,26 +18,26 @@
   </div>
 
   <div class="container">
-    <!-- LOGIN -->
-    <div id="login" class="card" style="max-width:640px;margin:auto;">
+    <!-- LOGIN (fallback hvis man sletter session) -->
+    <div id="login" class="card" style="max-width:640px;margin:auto;display:none;">
       <h3>Admin-login</h3>
       <div class="grid">
         <div class="field half">
           <label>Brugernavn</label>
-          <input id="u" class="input" placeholder="fx Bonde">
+          <input id="u" class="input" value="Bonde" readonly>
         </div>
         <div class="field half">
           <label>Kode</label>
-          <input id="p" class="input" type="password" placeholder="****">
+          <input id="p" class="input" type="password" value="0705" readonly>
         </div>
       </div>
       <div style="margin-top:12px;">
         <button id="loginBtn" class="button primary">Log ind</button>
       </div>
-      <small class="hint">Koden vises aldrig i klar tekst. Default kode: <b>0705</b></small>
+      <small class="hint">Du er sat op til fast admin-login.</small>
     </div>
 
-    <!-- ADMIN UI -->
+    <!-- ADMIN-UI -->
     <div id="adminUI" style="display:none;"></div>
   </div>
 
@@ -45,53 +45,37 @@
   ensureDefaults();
   setHeaderTitle(document.querySelector('#apptitle'));
   const sess = getSession();
-
   const loginBox = document.querySelector('#login');
   const adminBox = document.querySelector('#adminUI');
   const logoutBtn = document.querySelector('#logoutBtn');
 
-  // hvis man allerede er logget ind
-  if (sess && sess.role === "admin") {
+  // Automatisk admin-login
+  function forceAdminLogin(){
+    const sess = {
+      userId:'admin',
+      role:'admin',
+      username:'Bonde',
+      name:'Administrator',
+      lastActivity:Date.now()
+    };
+    localStorage.setItem('ak_session', JSON.stringify(sess));
+  }
+
+  // Tjek om session findes
+  if (!sess || sess.role !== "admin") {
+    forceAdminLogin(); // <-- her logger du automatisk ind
+    location.reload();
+  } else {
     loginBox.style.display = "none";
     adminBox.style.display = "block";
     buildAdminUI(adminBox);
   }
 
-  document.querySelector('#loginBtn').onclick = async ()=>{
-    const user = document.querySelector('#u').value.trim();
-    const code = document.querySelector('#p').value.trim();
-    const s = await adminLogin(user, code);
-    if (!s) return alert("Forkert admin-login.");
-    location.reload();
+  logoutBtn.onclick = () => {
+    localStorage.removeItem('ak_session');
+    alert("Du er nu logget ud som admin.");
+    location.href="/index.html";
   };
-
-  logoutBtn.onclick = logout;
-
-  // --- Brugernavn via ?u=Bonde ---
-  (function(){
-    const params = new URLSearchParams(location.search);
-    const u = params.get('u');
-    if (u) {
-      const un = document.getElementById('u');
-      if (un) un.value = u;
-      const pw = document.getElementById('p');
-      if (pw) pw.focus();
-      history.replaceState({}, document.title, location.pathname);
-    }
-  }());
-
-  // --- DEV-genvej: Ctrl+Shift+A = log ind som admin lokalt ---
-  window.addEventListener('keydown', e=>{
-    if (e.ctrlKey && e.shiftKey && e.key.toLowerCase()==='a') {
-      const sess = {
-        userId:'admin', role:'admin', username:'Bonde',
-        name:'Administrator', lastActivity:Date.now()
-      };
-      localStorage.setItem('ak_session', JSON.stringify(sess));
-      location.reload();
-    }
-  });
   </script>
 </body>
 </html>
-
