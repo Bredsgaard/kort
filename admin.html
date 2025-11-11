@@ -3,79 +3,51 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Adminpanel – Arbejdskort</title>
-  <link rel="stylesheet" href="/css/style.css">
-  <script src="/api/_util.js"></script>
-  <script src="/api/settings.js"></script>
+  <title>Admin – Arbejdskort</title>
+  <link rel="stylesheet" href="./css/style.css">
+  <script src="./api/_util.js"></script>
+  <script src="./api/login.js"></script>
+  <script src="./api/settings.js"></script>
 </head>
 <body>
   <div class="header" style="background:#166a2e;color:#fff;">
     <h1 id="apptitle">Arbejdskort – Admin</h1>
     <div class="nav">
-      <a class="button ghost" href="/index.html" style="color:#fff;">Medarbejder</a>
+      <a class="button ghost" href="./index.html" style="color:#fff;">Medarbejder</a>
       <button id="logoutBtn" class="button ghost" style="color:#fff;">Log ud</button>
     </div>
   </div>
 
   <div class="container">
-    <!-- LOGIN (fallback hvis man sletter session) -->
-    <div id="login" class="card" style="max-width:640px;margin:auto;display:none;">
+    <div id="login" class="card" style="max-width:640px;margin:auto;">
       <h3>Admin-login</h3>
       <div class="grid">
-        <div class="field half">
-          <label>Brugernavn</label>
-          <input id="u" class="input" value="Bonde" readonly>
-        </div>
-        <div class="field half">
-          <label>Kode</label>
-          <input id="p" class="input" type="password" value="0705" readonly>
-        </div>
+        <div class="field half"><label>Brugernavn</label><input id="u" class="input" placeholder="fx Bonde"></div>
+        <div class="field half"><label>Kode</label><input id="p" class="input" type="password" placeholder="****"></div>
       </div>
-      <div style="margin-top:12px;">
-        <button id="loginBtn" class="button primary">Log ind</button>
-      </div>
-      <small class="hint">Du er sat op til fast admin-login.</small>
+      <div style="margin-top:12px;"><button id="loginBtn" class="button primary">Log ind</button></div>
+      <small class="hint">Standard admin-kode: 0705</small>
     </div>
 
-    <!-- ADMIN-UI -->
     <div id="adminUI" style="display:none;"></div>
   </div>
 
-  <script>
-  ensureDefaults();
-  setHeaderTitle(document.querySelector('#apptitle'));
-  const sess = getSession();
-  const loginBox = document.querySelector('#login');
-  const adminBox = document.querySelector('#adminUI');
-  const logoutBtn = document.querySelector('#logoutBtn');
+<script>
+ensureDefaults(); setHeaderTitle(document.querySelector('#apptitle'));
+const sess=getSession(); const loginBox=document.querySelector('#login'); const adminBox=document.querySelector('#adminUI');
 
-  // Automatisk admin-login
-  function forceAdminLogin(){
-    const sess = {
-      userId:'admin',
-      role:'admin',
-      username:'Bonde',
-      name:'Administrator',
-      lastActivity:Date.now()
-    };
-    localStorage.setItem('ak_session', JSON.stringify(sess));
-  }
+if(sess && sess.role==='admin'){ loginBox.style.display='none'; adminBox.style.display='block'; buildAdminUI(adminBox); }
 
-  // Tjek om session findes
-  if (!sess || sess.role !== "admin") {
-    forceAdminLogin(); // <-- her logger du automatisk ind
-    location.reload();
-  } else {
-    loginBox.style.display = "none";
-    adminBox.style.display = "block";
-    buildAdminUI(adminBox);
-  }
+document.querySelector('#loginBtn').onclick=async()=>{
+  const u=document.querySelector('#u').value.trim();
+  const p=document.querySelector('#p').value.trim();
+  const s=await adminLogin(u,p);
+  if(!s) return alert('Forkert admin-login.');
+  location.reload();
+};
 
-  logoutBtn.onclick = () => {
-    localStorage.removeItem('ak_session');
-    alert("Du er nu logget ud som admin.");
-    location.href="/index.html";
-  };
-  </script>
+document.querySelector('#logoutBtn').onclick=logout;
+</script>
 </body>
 </html>
+
