@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tidligere arbejdskort</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <img src="img/logo.png" alt="" onerror="this.style.display='none'">
+    <h1>Tidligere arbejdskort</h1>
+  </div>
+  <nav class="actions-inline">
+    <a class="link" href="index.html">Nyt arbejdskort</a>
+    <a class="link" href="admin.html">Admin</a>
+  </nav>
+</header>
+
+<main>
+  <section class="card">
+    <div class="bar-between">
+      <div>Logget ind som: <strong id="who"></strong></div>
+      <div class="actions-inline">
+        <select id="rangeSel">
+          <option value="7">Seneste 7 dage</option>
+          <option value="30">Seneste 30 dage</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="list"></div>
+  </section>
+</main>
+
+<footer>© Bredsgaard A/S</footer>
+
+<script>
+(() => {
+  const LS_ACTIVE='ak_active_v1', LS_CARDS='ak_cards_v2', LS_OPEN='ak_open_id';
+  const $ = s => document.querySelector(s);
+  const active = () => JSON.parse(localStorage.getItem(LS_ACTIVE)||'null');
+  const allCards = () => JSON.parse(localStorage.getItem(LS_CARDS)||'[]');
+
+  const user = active();
+  if (!user) { window.location.href='index.html'; }
+
+  $('#who').textContent = user?.name || '';
+
+  function filteredCards(days){
+    const cutoff = Date.now() - days*24*3600*1000;
+    return allCards()
+      .filter(c => c.user===user.username && new Date(c.updatedAt).getTime() >= cutoff)
+      .sort((a,b)=>new Date(b.updatedAt)-new Date(a.updatedAt));
+  }
+
+  function render(){
+    const days = parseInt($('#rangeSel').value,10);
+    const list = filteredCards(days);
+    const box = $('#list'); box.innerHTML='';
+    if(list.length===0){ box.innerHTML='<p class="hint">Ingen arbejdskort i valgt periode.</p>'; return; }
+
+    list.forEach(c=>{
+      const f=c.fields||{};
+      const row=document.createElement('div');
+      row.className='card';
+      row.innerHTML=`
+        <div class="bar-between">
+          <div><strong>${f.date||''}</strong> · ${f.customer||'(uden kunde)'} · <span class="${c.status==='sent'?'':'hint'}">${c.status==='sent'?'Sendt':'Udkast'}</span></div>
+          <div class="actions-inline">
+            <button data-id="${c.id}" class="open">Åbn i arbejdskort</button>
+            <button data-id="${c.id}" class="del danger">Slet</button>
+          </div>
+        </div>`;
+      box.appendChild(row);
+    });
+
+    box.querySelectorAll('.open').forEach(b=>b.onclick=e=>{
+      const id=e.target.dataset.id;
+      localStorage.setItem(LS_OPEN, id);     // signalér hvilket kort der skal åbnes
+      window.location.href='index.html';     // index læser LS_OPEN og åbner kortet
+    });
+
+    box.querySelectorAll('.del').forEach(b=>b.onclick=e=>{
+      const id=e.target.dataset.id;
+      const arr=allCards().filter(x=>x.id!==id);
+      localStorage.setItem(LS_CARDS, JSON.stringify(arr));
+      render();
+    });
+  }
+
+  $('#rangeSel').onchange = render;
+  render();
+})();
+</script>
+</body>
+</html>
