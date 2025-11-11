@@ -1,31 +1,42 @@
 import { kv } from '@vercel/kv';
 
-const ADMIN_USER = 'Bonde';
-const ADMIN_PIN  = '0705';
-const KEY = 'ak:settings';
-
-function adminOK(req) {
-  return (req.headers['x-admin-user'] === ADMIN_USER && req.headers['x-admin-pin'] === ADMIN_PIN);
+async function getAdmin() {
+  const s = (await kv.get('ak:settings')) || {};
+  return {
+    adminUser: s.adminUser || 'Bonde',
+    adminPin:  s.adminPin  || '0705',
+    settings:  s
+  };
+}
+async function adminOK(req) {
+  const { adminUser, adminPin } = await getAdmin();
+  return (req.headers['x-admin-user'] === adminUser && req.headers['x-admin-pin'] === adminPin);
 }
 
 export default async function handler(req, res) {
   try {
     if (req.method === 'GET') {
-      const cfg = (await kv.get(KEY)) || {};
-      return res.json(cfg);
+      const { settings } = await getAdmin();
+      const { adminPin, ...safe } = settings || {};
+      return res.json(safe || {});
     }
 
-    if (!adminOK(req)) return res.status(401).json({ ok:false, error:'unauthorized' });
+    if (!(await adminOK(req))) return res.status(401).json({ ok:false, error:'unauthorized' });
 
     if (req.method === 'POST') {
-      const cfg = req.body || {};
-      await kv.set(KEY, cfg);
+      const incoming = req.body || {};
+      const current  = (await kv.get('ak:settings')) || {};
+      const next = { ...current, ...incoming };
+      // overskriv kun adminPin hvis der er angivet en ny
+      if (!incoming.adminPin) delete next.adminPin;
+      await kv.set('ak:settings', next);
       return res.json({ ok:true });
     }
 
-    res.status(405).end();
+    return res.status(405).end();
   } catch (e) {
-    res.status(500).json({ ok:false, error:'server' });
+    return res.status(500).json({ ok:false, error:'server' });
   }
 }
+
 
