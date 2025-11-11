@@ -4,31 +4,36 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Arbejdskort</title>
-  <link rel="stylesheet" href="/css/style.css">
-  <script src="/api/_util.js"></script>
-  <script src="/api/login.js"></script>
-  <script src="/api/cards.js"></script>
+  <link rel="stylesheet" href="./css/style.css">
+  <style>
+    .debug {background:#fff3cd;border:1px solid #ffe69c;color:#664d03;border-radius:8px;padding:10px;margin-top:12px;font-size:13px}
+    .ok {background:#e8f7ec;border-color:#b7ebc6;color:#145a2a}
+    .err {background:#fdecea;border-color:#f5c2c7;color:#842029}
+  </style>
+  <script src="./api/_util.js"></script>
+  <script src="./api/login.js"></script>
+  <script src="./api/cards.js"></script>
 </head>
 <body>
   <div class="header" style="background:#166a2e;color:#fff;">
     <h1 id="apptitle">Arbejdskort</h1>
     <div class="nav">
-      <a class="button ghost" href="/history" style="color:#fff;">Tidligere</a>
-      <a class="button ghost" href="/admin" style="color:#fff;">Admin</a>
-      <button id="toggleLoginBtn" class="button ghost" style="color:#fff;"></button>
+      <a class="button ghost" href="./history.html" style="color:#fff;">Tidligere</a>
+      <a class="button ghost" href="./admin.html" style="color:#fff;">Admin</a>
     </div>
   </div>
 
   <div class="container">
-    <!-- LOGIN (vises kun hvis login er aktiveret) -->
-    <div id="login" class="card" style="max-width:640px;margin:auto;display:none;">
+    <div id="debug" class="debug" style="display:none"></div>
+
+    <!-- LOGIN (vises kun hvis login senere aktiveres) -->
+    <div id="login" class="card" style="display:none;max-width:640px;margin:auto;">
       <h3>Log ind</h3>
       <div class="grid">
         <div class="field third"><label>Brugernavn</label><input id="u" class="input" placeholder="fx pbo"></div>
         <div class="field third"><label>Kode</label><input id="p" class="input" type="password" inputmode="numeric" pattern="[0-9]*" placeholder="****"></div>
         <div class="field third" style="align-self:end"><button id="loginBtn" class="button primary">Log ind</button></div>
       </div>
-      <small class="hint">Når I er klar til rigtig drift, bliver login her standard.</small>
     </div>
 
     <!-- ARBEJDSKORT -->
@@ -36,47 +41,39 @@
   </div>
 
 <script>
-ensureDefaults();
-setHeaderTitle(document.querySelector('#apptitle'));
+(function boot(){
+  // 1) Basistjek: er scripts lastet?
+  const dbg = document.getElementById('debug'); const logs = [];
+  function show(type, msg){ dbg.style.display='block'; dbg.className='debug ' + (type||''); dbg.innerHTML = msg; }
 
-const loginForced = isLoginForced();
-const loginBox = document.querySelector('#login');
-const newBox   = document.querySelector('#newcard');
-const toggleBtn= document.querySelector('#toggleLoginBtn');
+  if (!window.ensureDefaults || !window.buildCardForm) {
+    show('err', `
+      <b>Script-fejl:</b> Kunne ikke finde nødvendige funktioner.<br>
+      Tjek at dine filer findes og hedder præcis:
+      <code>/api/_util.js</code>, <code>/api/login.js</code>, <code>/api/cards.js</code>.<br>
+      Vi loader dem med <b>relative stier</b>: <code>./api/...</code>
+    `);
+    console.error('Manglende funktioner:', {ensureDefaults: !!window.ensureDefaults, buildCardForm: !!window.buildCardForm});
+    return;
+  }
 
-// Sæt tekst på toggle-knap
-function renderToggleLabel(){
-  toggleBtn.textContent = loginForced ? 'Deaktiver login (demo)' : 'Aktiver login';
-}
-renderToggleLabel();
+  // 2) Kør defaults + DEMO (auto)
+  try {
+    ensureDefaults();
+    setHeaderTitle(document.querySelector('#apptitle'));
+    startDemoSession(); // demo uden login
 
-// Håndtér tilstande
-if (loginForced) {
-  // Viser login flow
-  loginBox.style.display = 'block';
-  newBox.style.display   = 'none';
-} else {
-  // Auto DEMO – spring login over
-  startDemoSession();
-  loginBox.style.display = 'none';
-  newBox.style.display   = 'block';
-  buildCardForm(newBox);
-}
+    const newBox = document.querySelector('#newcard');
+    newBox.style.display = 'block';
+    buildCardForm(newBox);
 
-// Toggle login <-> demo
-toggleBtn.onclick = () => {
-  setLoginForced(!isLoginForced());
-  location.reload();
-};
-
-// Normal login
-document.querySelector('#loginBtn')?.addEventListener('click', async ()=>{
-  const u = document.querySelector('#u').value.trim();
-  const p = document.querySelector('#p').value.trim();
-  const s = await employeeLogin(u,p);
-  if(!s) return alert('Forkert login.');
-  location.reload();
-});
+    show('ok', '✅ Kører i DEMO-tilstand. (Når alt virker, kan vi aktivere login igen.)');
+  } catch (e) {
+    show('err', 'Der opstod en fejl under initialisering. Se Console for detaljer.');
+    console.error(e);
+  }
+})();
 </script>
 </body>
 </html>
+
