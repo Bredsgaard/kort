@@ -1,23 +1,18 @@
-import { kv } from "@vercel/kv";
-import { getSettings, sha256 } from "./_util.js";
-
-export const config = { runtime: "edge" };
-
-export default async function handler(req) {
-  if (req.method !== "POST") return new Response("Method Not Allowed", { status: 405 });
-  const { username, code } = await req.json();
-
-  const s = await getSettings();
-
-  // admin
-  if (username === s.adminUser && sha256(code) === s.adminPinHash) {
-    return new Response(JSON.stringify({ success: true, role: "admin", username }), { status: 200, headers: { "content-type": "application/json" } });
-  }
-
-  const list = (await kv.get("users:v1")) || [];
-  const u = list.find(x => x.username === String(username).toLowerCase());
-  if (!u || u.active === false) return new Response(JSON.stringify({ success: false }), { status: 200 });
-
-  if (sha256(code) !== u.codeHash) return new Response(JSON.stringify({ success: false }), { status: 200 });
-  return new Response(JSON.stringify({ success: true, role: "user", name: u.name, username: u.username }), { status: 200, headers: { "content-type": "application/json" } });
+// api/login.js – v2
+async function employeeLogin(username,pin){
+  const users=load(AK_KEYS.users,[]);
+  const hash=await sha256(pin);
+  const u=users.find(x=>x.username.trim().toLowerCase()===username.trim().toLowerCase()&&x.pinHash===hash&&x.active!==false);
+  if(!u)return null;
+  const sess={userId:u.id,role:'employee',username:u.username,name:u.name,lastActivity:Date.now()};
+  save(AK_KEYS.session,sess);return sess;
 }
+async function adminLogin(username,code){
+  const s=load(AK_KEYS.settings,defaultSettings);
+  if(username.trim().toLowerCase()===(s.adminUsername||"Bonde").toLowerCase()&&code==="0705"){
+    const sess={userId:'admin',role:'admin',username,name:'Administrator',lastActivity:Date.now()};
+    save(AK_KEYS.session,sess);return sess;
+  }
+  return null;
+}
+
