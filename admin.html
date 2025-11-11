@@ -1,251 +1,202 @@
-<!doctype html>
-<html lang="da">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Admin – Arbejdskort</title>
-  <link rel="stylesheet" href="css/style.css" />
-</head>
-<body>
-<header class="top">
-  <div class="brand">
-    <img src="img/logo.png" alt="" onerror="this.style.display='none'">
-    <h1 id="appTitle">Admin</h1>
-  </div>
-  <nav class="actions-inline">
-    <a class="link" href="index.html">Nyt arbejdskort</a>
-    <a class="link" href="history.html">Tidligere</a>
-  </nav>
-</header>
+<!doctype html><html lang="da"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin – Arbejdskort</title>
+<link rel="stylesheet" href="css/style.css">
+</head><body>
+<div class="topbar"><div class="wrap">
+  <div>Admin – Arbejdskort</div>
+  <div id="awho"></div>
+</div></div>
 
-<main>
-  <section id="adminLock" class="card">
-    <h2>Admin adgang</h2>
-    <form id="adminForm" autocomplete="off">
-      <div class="grid-2">
-        <div><label>Admin-brugernavn</label><input id="adminUser" placeholder="Bonde" /></div>
-        <div><label>Admin-kode</label><input type="password" id="adminPin" inputmode="numeric" pattern="[0-9]*" placeholder="••••" /></div>
-      </div>
-      <div class="actions"><button class="primary" id="adminUnlock" type="submit">Lås op</button></div>
-      <p id="adminMsg" class="danger" style="display:none;margin-top:8px"></p>
-    </form>
-  </section>
-
-  <section id="panel" class="card" style="display:none">
-    <h2>Indstillinger</h2>
-    <label>App-navn</label><input id="appName" placeholder="Fx Bredsgaard Arbejdskort" />
-    <div class="grid-2">
-      <div><label>Modtager-e-mails (komma)</label><input id="emails" placeholder="pb@bredsgaard.dk" /></div>
-      <div><label>Emne-prefix</label><input id="subjectPrefix" placeholder="Arbejdskort" /></div>
+<div class="wrap">
+  <!-- LÅS -->
+  <div id="alock" class="card">
+    <h1>Admin adgang</h1>
+    <div class="row">
+      <div><label>Admin-brugernavn</label><input id="au" placeholder="Brugernavn" autocomplete="username"></div>
+      <div><label>Admin-kode</label><input id="ap" type="password" placeholder="Kode" autocomplete="current-password"></div>
     </div>
-    <label>Mail-footer (brug {dato} og {medarbejder})</label><textarea id="footer" rows="2">Ref.: {dato} – {medarbejder}</textarea>
+    <div style="margin-top:12px"><button class="btn" id="aopen">Lås op</button></div>
+  </div>
 
-    <div class="grid-2">
-      <div><label>Auto-oprydning (udkast, dage)</label><input id="retentionDays" type="number" min="1" value="7" /></div>
-      <div>
-        <label>Påkrævede felter</label>
-        <div class="card" style="padding:10px">
-          <label><input type="checkbox" class="req" value="date"> Dato</label>
-          <label><input type="checkbox" class="req" value="name"> Medarbejdernavn</label>
-          <label><input type="checkbox" class="req" value="customer"> Kunde</label>
-          <label><input type="checkbox" class="req" value="location"> Lokation</label>
-          <label><input type="checkbox" class="req" value="machineNo"> Maskin nr</label>
-          <label><input type="checkbox" class="req" value="machine"> Maskine/Model</label>
-          <label><input type="checkbox" class="req" value="work"> Arbejdet art</label>
-          <label><input type="checkbox" class="req" value="fault"> Fejlbeskrivelse</label>
-          <label><input type="checkbox" class="req" value="done"> Udført arbejde</label>
-          <label><input type="checkbox" class="req" value="hours"> Normal timer</label>
-          <label><input type="checkbox" class="req" value="overtime"> Overtimer</label>
-          <label><input type="checkbox" class="req" value="mhours"> Maskintimer</label>
-          <label><input type="checkbox" class="req" value="km"> Kørte km</label>
-          <label><input type="checkbox" class="req" value="welding"> Svejsning</label>
-          <label><input type="checkbox" class="req" value="electrodes"> Elektroder</label>
-          <label><input type="checkbox" class="req" value="diesel"> Diesel</label>
-          <label><input type="checkbox" class="req" value="note"> Bemærkninger</label>
+  <!-- PANEL -->
+  <div id="apanel" style="display:none">
+    <div class="card">
+      <h1>Indstillinger</h1>
+      <div class="row-3">
+        <div><label>Admin-brugernavn</label><input id="s_admin_user" placeholder="Brugernavn"></div>
+        <div><label>Ny admin-kode (min. 4 cifre)</label><input id="s_admin_pin" placeholder="••••"></div>
+        <div><label>Behold kladder (dage)</label><input id="s_keep" inputmode="numeric" value="7"></div>
+      </div>
+
+      <div class="row" style="margin-top:8px">
+        <div>
+          <label>Modtager-e-mails (komma)</label>
+          <input id="s_emails" placeholder="pb@bredsgaard.dk, ...">
+        </div>
+        <div>
+          <label>Emne-prefix</label>
+          <input id="s_subj" placeholder="Arbejdskort">
         </div>
       </div>
-    </div>
 
-    <label>Arbejdstyper (én pr. linje)</label>
-    <textarea id="workPresets" rows="3" placeholder="Service&#10;Olieskift&#10;Kædeskift"></textarea>
+      <div style="margin-top:8px"><label>Mail-footer</label><textarea id="s_footer" placeholder="Venlig hilsen&#10;Bredsgaard A/S"></textarea></div>
 
-    <h3 style="margin-top:16px">Forbrugsliste</h3>
-    <div class="grid-3">
-      <input id="consName" placeholder="Navn (fx Olie)" />
-      <input id="consUnit" placeholder="Enhed (fx L / stk)" />
-      <button id="consAdd" type="button">Tilføj</button>
-    </div>
-    <div class="tableWrap" style="margin-top:8px">
-      <table class="table"><thead><tr><th>Navn</th><th>Enhed</th><th>Handling</th></tr></thead>
-      <tbody id="consTable"></tbody></table>
-    </div>
-
-    <div class="actions">
-      <button class="primary" id="saveCfg" type="button">Gem indstillinger</button>
-      <button id="resetCfg" type="button">Nulstil</button>
-    </div>
-  </section>
-
-  <section id="usersCard" class="card" style="display:none">
-    <h2>Brugere</h2>
-    <form id="userForm" autocomplete="off">
-      <div class="grid-3">
-        <div><label>Navn</label><input id="uName" placeholder="Fx Per Bonde" /></div>
-        <div><label>Brugernavn</label><input id="uUsername" placeholder="fx pbo" autocapitalize="off" /></div>
-        <div><label>Ny kode (4+ cifre)</label><input type="password" id="uCode" placeholder="••••" inputmode="numeric" pattern="[0-9]*" /></div>
+      <div class="row" style="margin-top:8px">
+        <div>
+          <label>Arbejdstyper (én pr. linje)</label>
+          <textarea id="s_types" placeholder="Service&#10;Olieskift&#10;Kædeskift"></textarea>
+        </div>
+        <div>
+          <label>Påkrævede felter</label>
+          <div id="s_req"></div>
+          <div class="mut">Disse skal udfyldes før “Send”.</div>
+        </div>
       </div>
-      <div class="actions" style="margin-top:10px">
-        <button class="primary" id="addUser" type="submit">Tilføj / Opdatér</button>
-        <button id="clearInputs" type="button">Ryd</button>
+
+      <div class="card" style="margin-top:12px">
+        <h2>Forbrugsliste</h2>
+        <div class="row-3">
+          <div><label>Navn</label><input id="c_name" placeholder="Fx Olie"></div>
+          <div><label>Enhed</label><input id="c_unit" placeholder="Fx L / stk"></div>
+          <div><label>&nbsp;</label><button class="btn" id="c_add">Tilføj</button></div>
+        </div>
+        <table style="margin-top:8px"><thead><tr><th>Navn</th><th>Enhed</th><th></th></tr></thead><tbody id="c_tbl"></tbody></table>
       </div>
-      <p id="userMsg" style="display:none"></p>
-    </form>
 
-    <div class="tableWrap">
-      <table class="table">
-        <thead><tr><th>Navn</th><th>Brugernavn</th><th>Aktiv</th><th>Handling</th></tr></thead>
-        <tbody id="usersTable"></tbody>
-      </table>
+      <div style="margin-top:12px"><button class="btn" id="s_save">Gem indstillinger</button></div>
     </div>
-  </section>
-</main>
 
-<footer>© Bredsgaard A/S</footer>
+    <div class="card">
+      <h1>Brugere</h1>
+      <div class="row-3">
+        <div><label>Navn</label><input id="u_name" placeholder="Fx Per Bonde"></div>
+        <div><label>Brugernavn</label><input id="u_user" placeholder="Fx pbo"></div>
+        <div><label>Ny kode (4+ cifre)</label><input id="u_code" placeholder="••••"></div>
+      </div>
+      <div style="margin-top:8px"><button class="btn" id="u_add">Tilføj / Opdatér</button> <span id="u_msg" class="mut"></span></div>
+      <table style="margin-top:8px"><thead><tr><th>Navn</th><th>Brugernavn</th><th>Aktiv</th><th>Handling</th></tr></thead><tbody id="u_tbl"></tbody></table>
+    </div>
+  </div>
+</div>
 
 <script>
-(() => {
-  const ADMIN_HEADERS = { 'x-admin-user':'Bonde', 'x-admin-pin':'0705', 'Content-Type':'application/json' };
-  const $ = s => document.querySelector(s);
+const api=(p,opt={})=>fetch(p,opt);
+const ah = { get(){ try{return JSON.parse(localStorage.getItem('ak_admin_hdr_v1')||'null')}catch{return null} },
+              set(v){ localStorage.setItem('ak_admin_hdr_v1', JSON.stringify(v)); },
+              clear(){ localStorage.removeItem('ak_admin_hdr_v1'); } };
 
-  // ---- API helpers ----
-  const loadSettings = async () => (await (await fetch('/api/settings')).json());
-  const saveSettings = async (cfg) => (await (await fetch('/api/settings', {method:'POST', headers: ADMIN_HEADERS, body: JSON.stringify(cfg)})).json());
-  const listUsers  = async () => (await (await fetch('/api/users')).json());
-  const upsertUser = async (u)  => (await (await fetch('/api/users',{method:'POST', headers: ADMIN_HEADERS, body: JSON.stringify(u)})).json());
-  const delUser    = async (username)=> (await (await fetch('/api/users?username='+encodeURIComponent(username),{method:'DELETE', headers: ADMIN_HEADERS})).json());
-  const toggleUser = async (username,active)=> (await (await fetch('/api/users',{method:'PATCH', headers: ADMIN_HEADERS, body: JSON.stringify({username,active})})).json());
+const reqFields = [
+  {key:'dato',label:'Dags dato'},
+  {key:'arbejdet_art',label:'Arbejdet art'},
+  {key:'udfoert',label:'Udført arbejde'}
+];
 
-  // ---- Admin login (klient-side gate) ----
-  document.getElementById('adminForm').addEventListener('submit', async (e)=>{
-    e.preventDefault();
-    const un = (document.getElementById('adminUser').value||'').trim();
-    const pin= (document.getElementById('adminPin').value||'').trim();
-    if (un==='Bonde' && pin==='0705'){
-      document.getElementById('adminLock').style.display='none';
-      document.getElementById('panel').style.display='';
-      document.getElementById('usersCard').style.display='';
-      await initSettings();
-      await renderUsers();
-    } else {
-      document.getElementById('adminMsg').textContent='Forkert admin-brugernavn eller kode.';
-      document.getElementById('adminMsg').style.display='block';
-    }
+async function init(){
+  const hdr = ah.get();
+  if(hdr){ $('#alock').style.display='none'; $('#apanel').style.display=''; $('#awho').textContent=`Admin: ${hdr['x-admin-user']}`; await loadAll(); }
+}
+init();
+
+function $(s){ return document.querySelector(s); }
+
+$('#aopen').addEventListener('click', async ()=>{
+  const u=$('#au').value.trim(); const p=$('#ap').value.trim();
+  const r=await api('/api/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({username:u,code:p})});
+  const d=await r.json();
+  if(d.success && d.role==='admin'){
+    ah.set({'x-admin-user':u,'x-admin-pin':p});
+    location.reload();
+  }else alert('Forkert admin-login');
+});
+
+async function loadAll(){
+  // indstillinger
+  const s = await (await api('/api/settings')).json();
+  $('#s_admin_user').value=s.adminUser||'';
+  $('#s_keep').value=s.keepDays||7;
+  $('#s_emails').value=(s.emailTo||[]).join(', ');
+  $('#s_subj').value=s.mailSubjectPrefix||'';
+  $('#s_footer').value=s.mailFooter||'';
+  $('#s_types').value=(s.workTypes||[]).join('\n');
+
+  // req felter
+  const box=$('#s_req'); box.innerHTML='';
+  reqFields.forEach(f=>{
+    const id='rf_'+f.key; const chk=document.createElement('label'); chk.style.display='block';
+    chk.innerHTML=`<input type="checkbox" id="${id}"> ${f.label}`;
+    box.append(chk); if((s.requiredFields||[]).includes(f.key)) $('#'+id).checked=true;
   });
 
-  // ---- Indstillinger ----
-  let SETTINGS = {};
-  async function initSettings(){
-    SETTINGS = await loadSettings();
-    document.getElementById('appTitle').textContent = SETTINGS.appName || 'Admin';
-    document.getElementById('appName').value = SETTINGS.appName || 'Bredsgaard Arbejdskort';
-    document.getElementById('emails').value = SETTINGS.emails || 'pb@bredsgaard.dk';
-    document.getElementById('subjectPrefix').value = SETTINGS.subjectPrefix || 'Arbejdskort';
-    document.getElementById('footer').value = SETTINGS.footer || 'Ref.: {dato} – {medarbejder}';
-    document.getElementById('retentionDays').value = SETTINGS.retentionDays || 7;
-    document.getElementById('workPresets').value = (SETTINGS.workPresets||[]).join('\n');
-    document.querySelectorAll('.req').forEach(cb => cb.checked = (SETTINGS.requiredFields||[]).includes(cb.value));
-    renderCons(SETTINGS.consumables||[]);
-  }
+  // consumables
+  drawCons(s.consumables||[]);
 
-  function renderCons(arr){
-    const tb=document.getElementById('consTable'); tb.innerHTML='';
-    arr.forEach((x,i)=>{
-      const tr=document.createElement('tr');
-      tr.innerHTML = `<td>${x.name}</td><td>${x.unit||''}</td><td><button data-i="${i}" class="del danger">Slet</button></td>`;
-      tb.appendChild(tr);
-    });
-    tb.querySelectorAll('.del').forEach(b=>b.onclick=async e=>{
-      const i=+e.target.dataset.i; SETTINGS.consumables.splice(i,1); await saveSettings(SETTINGS); renderCons(SETTINGS.consumables);
-    });
-  }
+  // brugere
+  drawUsers(await (await api('/api/users')).json());
+}
 
-  document.getElementById('consAdd').onclick = async ()=>{
-    const name=(document.getElementById('consName').value||'').trim();
-    const unit=(document.getElementById('consUnit').value||'').trim();
-    if(!name) return;
-    SETTINGS.consumables = SETTINGS.consumables||[];
-    SETTINGS.consumables.push({ id: (crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)), name, unit });
-    await saveSettings(SETTINGS);
-    document.getElementById('consName').value=''; document.getElementById('consUnit').value='';
-    renderCons(SETTINGS.consumables);
-  };
-
-  document.getElementById('saveCfg').onclick = async ()=>{
-    const required = [...document.querySelectorAll('.req')].filter(cb=>cb.checked).map(cb=>cb.value);
-    SETTINGS = {
-      ...SETTINGS,
-      appName: document.getElementById('appName').value.trim(),
-      emails: document.getElementById('emails').value.trim(),
-      subjectPrefix: (document.getElementById('subjectPrefix').value.trim() || 'Arbejdskort'),
-      footer: document.getElementById('footer').value,
-      retentionDays: Math.max(1, parseInt(document.getElementById('retentionDays').value||'7',10)),
-      requiredFields: required,
-      workPresets: (document.getElementById('workPresets').value||'').split('\n').map(s=>s.trim()).filter(Boolean),
-      consumables: SETTINGS.consumables||[]
-    };
-    await saveSettings(SETTINGS);
-    alert('Indstillinger gemt på serveren.');
-  };
-
-  document.getElementById('resetCfg').onclick = async ()=>{
-    SETTINGS = {}; await saveSettings(SETTINGS); await initSettings();
-  };
-
-  // ---- Brugere ----
-  async function renderUsers(){
-    const users = await listUsers();
-    const tbody = document.getElementById('usersTable'); tbody.innerHTML='';
-    users.forEach(u=>{
-      const tr=document.createElement('tr');
-      tr.innerHTML = `<td>${u.name}</td><td>${u.username}</td><td>${u.active!==false?'Ja':'Nej'}</td>
-        <td class="actions-inline">
-          <button class="edit" data-u="${u.username}">Redigér</button>
-          ${u.username.toLowerCase()==='bonde' ? '' : `
-          <button class="toggle" data-u="${u.username}" data-a="${u.active!==false?'0':'1'}">${u.active!==false?'Deaktivér':'Aktivér'}</button>
-          <button class="del danger" data-u="${u.username}">Slet</button>`}
-        </td>`;
-      tbody.appendChild(tr);
-    });
-
-    tbody.querySelectorAll('.edit').forEach(b=>b.onclick=e=>{
-      const u = users.find(x=>x.username===e.target.dataset.u);
-      document.getElementById('uName').value=u.name; document.getElementById('uUsername').value=u.username; document.getElementById('uCode').value='';
-    });
-    tbody.querySelectorAll('.toggle').forEach(b=>b.onclick=async e=>{
-      const un=e.target.dataset.u, a=e.target.dataset.a==='1'; await toggleUser(un,a); await renderUsers();
-    });
-    tbody.querySelectorAll('.del').forEach(b=>b.onclick=async e=>{
-      if (!confirm('Slet bruger?')) return; await delUser(e.target.dataset.u); await renderUsers();
-    });
-  }
-
-  document.getElementById('userForm').addEventListener('submit', async (e)=>{
-    e.preventDefault();
-    const name=(document.getElementById('uName').value||'').trim();
-    const username=(document.getElementById('uUsername').value||'').trim();
-    const code=(document.getElementById('uCode').value||'').trim();
-    function msg(t){ const p=document.getElementById('userMsg'); p.textContent=t; p.style.display='block'; setTimeout(()=>p.style.display='none',2200); }
-    if(!name || !username) return msg('Udfyld både Navn og Brugernavn.');
-    const res = await upsertUser({ name, username, code });
-    if (!res.ok) return msg(res.error==='need_code' ? 'Angiv en kode for ny bruger.' : 'Fejl ved gem.');
-    document.getElementById('uName').value=''; document.getElementById('uUsername').value=''; document.getElementById('uCode').value='';
-    await renderUsers(); msg('Bruger gemt.');
+function drawCons(list){
+  const tb=$('#c_tbl'); tb.innerHTML='';
+  list.forEach((c,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${c.name}</td><td>${c.unit||''}</td><td><span class="link" data-del="${i}">Slet</span></td>`;
+    tb.append(tr);
   });
+  tb.querySelectorAll('[data-del]').forEach(a=>a.addEventListener('click',()=>{ list.splice(parseInt(a.dataset.del,10),1); drawCons(list); }));
+  // gem på window for s_save
+  window._cons=list;
+}
+$('#c_add').addEventListener('click', ()=>{
+  const n=$('#c_name').value.trim(), u=$('#c_unit').value.trim();
+  if(!n) return; (window._cons=window._cons||[]).push({name:n,unit:u}); $('#c_name').value=''; $('#c_unit').value=''; drawCons(window._cons);
+});
 
-  document.getElementById('clearInputs').onclick = ()=>{
-    document.getElementById('uName').value=''; document.getElementById('uUsername').value=''; document.getElementById('uCode').value='';
+$('#s_save').addEventListener('click', async ()=>{
+  const hdr=ah.get(); if(!hdr) return;
+  const req=reqFields.filter(f=>$('#rf_'+f.key).checked).map(f=>f.key);
+  const payload={
+    adminUser: $('#s_admin_user').value.trim(),
+    newAdminPin: $('#s_admin_pin').value.trim(),
+    keepDays: parseInt($('#s_keep').value||'7',10),
+    emailTo: $('#s_emails').value.split(',').map(s=>s.trim()).filter(Boolean),
+    mailSubjectPrefix: $('#s_subj').value,
+    mailFooter: $('#s_footer').value,
+    workTypes: $('#s_types').value.split('\n').map(s=>s.trim()).filter(Boolean),
+    consumables: window._cons||[],
+    requiredFields: req
   };
-})();
+  const r=await api('/api/settings',{method:'POST',headers:{'content-type':'application/json',...hdr},body:JSON.stringify(payload)});
+  if(r.ok){ alert('Indstillinger gemt'); if(payload.newAdminPin) { ah.set({'x-admin-user':payload.adminUser||hdr['x-admin-user'],'x-admin-pin':$('#s_admin_pin').value}); } }
+  else alert('Fejl ved gem');
+});
+
+function drawUsers(list){
+  const tb=$('#u_tbl'); tb.innerHTML='';
+  list.forEach(u=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${u.name}</td><td>${u.username}</td><td>${u.active?'Ja':'Nej'}</td>
+    <td><span class="link" data-act="edit" data-id="${u.username}">Redigér</span> • <span class="link" data-act="del" data-id="${u.username}">Slet</span></td>`;
+    tb.append(tr);
+  });
+  tb.querySelectorAll('[data-act="edit"]').forEach(a=>a.addEventListener('click',()=>{
+    const u=list.find(x=>x.username===a.dataset.id);
+    $('#u_name').value=u.name; $('#u_user').value=u.username; $('#u_code').value='';
+  }));
+  tb.querySelectorAll('[data-act="del"]').forEach(a=>a.addEventListener('click',async ()=>{
+    const hdr=ah.get(); await api('/api/users?username='+encodeURIComponent(a.dataset.id),{method:'DELETE',headers:hdr});
+    drawUsers(await (await api('/api/users')).json());
+  }));
+}
+
+$('#u_add').addEventListener('click', async ()=>{
+  const hdr=ah.get(); if(!hdr) return;
+  const payload={ name: $('#u_name').value.trim(), username: $('#u_user').value.trim(), code: $('#u_code').value.trim() };
+  const r=await api('/api/users',{method:'POST',headers:{'content-type':'application/json',...hdr},body:JSON.stringify(payload)});
+  const d=await r.json(); $('#u_msg').textContent = d?.error ? ('Fejl: '+d.error) : 'Gemt';
+  drawUsers(await (await api('/api/users')).json());
+});
+
+// helpers
 </script>
-</body>
-</html>
+</body></html>
+
