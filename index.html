@@ -16,11 +16,19 @@
 </header>
 
 <main>
-  <!-- LOCK -->
+  <!-- LOGIN -->
   <section id="lock" class="card">
-    <h2>Log ind med kode</h2>
-    <label>Kode</label>
-    <input type="password" id="pin" inputmode="numeric" pattern="[0-9]*" placeholder="Fx 1234" required autofocus>
+    <h2>Log ind</h2>
+    <div class="grid-2">
+      <div>
+        <label>Brugernavn</label>
+        <input id="loginUser" placeholder="fx pbo" autocomplete="username" />
+      </div>
+      <div>
+        <label>Kode</label>
+        <input type="password" id="loginPin" inputmode="numeric" pattern="[0-9]*" placeholder="••••" autocomplete="current-password" />
+      </div>
+    </div>
     <div class="actions">
       <button class="primary" id="unlockBtn">Lås op</button>
     </div>
@@ -31,14 +39,20 @@
   <section id="dash" class="card" style="display:none">
     <div class="bar-between">
       <div>Logget ind som: <strong id="who"></strong></div>
-      <button id="logout" class="secondary btn-small">Skift bruger</button>
+      <div class="actions-inline">
+        <select id="rangeSel">
+          <option value="7">Seneste 7 dage</option>
+          <option value="30">Seneste 30 dage</option>
+        </select>
+        <button id="logout" class="secondary btn-small">Log ud</button>
+      </div>
     </div>
 
     <div class="actions">
-      <button id="newCard" class="primary">➕ Nyt kort</button>
+      <button id="newCard" class="primary">➕ Nyt arbejdskort</button>
     </div>
 
-    <h3 style="margin-top:10px">Mine kort (seneste 7 dage)</h3>
+    <h3 style="margin-top:10px">Mine arbejdskort</h3>
     <div id="cards"></div>
   </section>
 
@@ -52,12 +66,12 @@
 
       <div class="grid-2">
         <div>
-          <label>Dato</label>
+          <label>Dags dato</label>
           <input type="date" id="date" required />
         </div>
         <div>
           <label>Medarbejdernavn</label>
-          <input type="text" id="name" placeholder="Skriv dit fulde navn" required />
+          <input type="text" id="name" placeholder="Dit fulde navn" required />
         </div>
       </div>
 
@@ -75,41 +89,64 @@
         </div>
       </div>
 
-      <label>Arbejdet art</label>
-      <input type="text" id="work" placeholder="Fx Olie- og kædeskift" required />
+      <div class="grid-3">
+        <div>
+          <label>Maskin nr</label>
+          <input type="text" id="machineNo" placeholder="Fx serienr./intern nr" />
+        </div>
+        <div>
+          <label>Maskintimer</label>
+          <input type="number" step="0.25" min="0" id="mhours" value="0" />
+        </div>
+        <div>
+          <label>Kørte km</label>
+          <input type="number" step="0.1" min="0" id="km" value="0" />
+        </div>
+      </div>
 
-      <label>Fejlbeskrivelse</label>
-      <textarea id="fault" rows="3" placeholder="Kort beskrivelse af fejl" required></textarea>
-
-      <label>Udført arbejde</label>
-      <textarea id="done" rows="3" placeholder="Hvad blev lavet?" required></textarea>
+      <div class="grid-3">
+        <div>
+          <label>Svejsning (timer)</label>
+          <input type="number" step="0.25" min="0" id="welding" value="0" />
+        </div>
+        <div>
+          <label>Elektroder (stk)</label>
+          <input type="number" step="1" min="0" id="electrodes" value="0" />
+        </div>
+        <div>
+          <label>Diesel (liter)</label>
+          <input type="number" step="0.1" min="0" id="diesel" value="0" />
+        </div>
+      </div>
 
       <div class="grid-3">
         <div>
           <label>Normal timer</label>
-          <input type="number" step="0.25" min="0" id="hours" value="0" required />
+          <input type="number" step="0.25" min="0" id="hours" value="0" />
         </div>
         <div>
-          <label>Maskintimer</label>
-          <input type="number" step="0.25" min="0" id="mhours" value="0" required />
+          <label>Overtimer</label>
+          <input type="number" step="0.25" min="0" id="overtime" value="0" />
         </div>
         <div>
-          <label>Kørte km</label>
-          <input type="number" step="0.1" min="0" id="km" value="0" required />
+          <label>Arbejdet art</label>
+          <input type="text" id="work" placeholder="Fx service, olie, kæde" required />
         </div>
       </div>
 
-      <label>Billeder (valgfrit, max 5)</label>
-      <input type="file" id="images" accept="image/*" multiple />
-      <div id="preview" class="preview"></div>
+      <label>Fejlbeskrivelse</label>
+      <textarea id="fault" rows="3" placeholder="Kort beskrivelse af fejl"></textarea>
 
-      <label>Noter</label>
-      <textarea id="note" rows="2" placeholder="Evt. bemærkninger" required></textarea>
+      <label>Udført arbejde</label>
+      <textarea id="done" rows="3" placeholder="Hvad blev lavet?"></textarea>
+
+      <label>Bemærkninger</label>
+      <textarea id="note" rows="2" placeholder="Evt. bemærkninger"></textarea>
 
       <div class="actions">
-        <button type="button" id="save">💾 Gem</button>
+        <button type="button" id="save">💾 Gem (udkast)</button>
         <button type="button" id="print">Udskriv / PDF</button>
-        <button type="submit" class="primary">✉️ Send</button>
+        <button type="submit" class="primary">✉️ Send (markeres sendt)</button>
       </div>
     </section>
   </form>
@@ -119,225 +156,208 @@
 
 <script>
 (() => {
-  // keys
-  const LS_ADMIN = 'ds_admin_v2';
-  const LS_USERS = 'ds_users_v1';
-  const LS_ACTIVE = 'ds_active_user_v1';
-  const LS_CARDS = 'ds_cards_v1'; // [{id,user,createdAt,updatedAt,status:'draft'|'sent',fields:{...}}]
-
-  // utils
+  // storage keys
+  const LS_ADMIN='ak_admin_v3', LS_USERS='ak_users_v2', LS_ACTIVE='ak_active_v1', LS_CARDS='ak_cards_v2';
+  // helpers
   const $ = s => document.querySelector(s);
-  const today = () => new Date().toISOString().slice(0,10);
-  const uid = () => Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-4);
   const cfg = () => JSON.parse(localStorage.getItem(LS_ADMIN)||'{}');
   const users = () => JSON.parse(localStorage.getItem(LS_USERS)||'[]');
-  const activeUser = () => JSON.parse(localStorage.getItem(LS_ACTIVE)||'null');
-  const setActiveUser = u => localStorage.setItem(LS_ACTIVE, JSON.stringify(u));
+  const active = () => JSON.parse(localStorage.getItem(LS_ACTIVE)||'null');
+  const setActive = u => localStorage.setItem(LS_ACTIVE, JSON.stringify(u));
   const allCards = () => JSON.parse(localStorage.getItem(LS_CARDS)||'[]');
-  const setCards = arr => localStorage.setItem(LS_CARDS, JSON.stringify(arr));
+  const setCards = a => localStorage.setItem(LS_CARDS, JSON.stringify(a));
+  const today = () => new Date().toISOString().slice(0,10);
+  const uid = () => Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-4);
 
-  // header title
-  $('#appTitle').textContent = (cfg().appName || 'Arbejdskort');
+  // title from admin
+  $('#appTitle').textContent = cfg().appName || 'Arbejdskort';
 
-  // LOCK
+  // ---- LOGIN ----
+  function resetToLogin(){
+    $('#lock').style.display='';
+    $('#dash').style.display='none';
+    $('#form').style.display='none';
+    $('#loginUser').value='';
+    $('#loginPin').value='';
+  }
   $('#unlockBtn').onclick = () => {
-    const pin = ($('#pin').value||'').trim();
-    const list = users().filter(u=>u.active!==false);
-    const u = list.find(x=>String(x.code)===pin);
-    if(!u){ $('#lockMsg').textContent='Ugyldig kode eller bruger inaktiv.'; $('#lockMsg').style.display='block'; return; }
-    setActiveUser(u);
+    const un=($('#loginUser').value||'').trim().toLowerCase();
+    const pin=($('#loginPin').value||'').trim();
+    const u = users().find(x => x.active!==false && x.username.toLowerCase()===un && String(x.code)===pin);
+    if(!u){ $('#lockMsg').textContent='Forkert brugernavn eller kode – eller bruger inaktiv.'; $('#lockMsg').style.display='block'; return; }
+    setActive(u);
     showDash();
   };
 
-  // DASH
+  // ---- DASHBOARD ----
   function purgeOldDrafts(){
     const days = Math.max(1, parseInt(cfg().retentionDays||'7',10));
     const cutoff = Date.now() - days*24*3600*1000;
-    const pruned = allCards().filter(c => !(c.status==='draft' && (new Date(c.createdAt)).getTime() < cutoff));
+    const pruned = allCards().filter(c => !(c.status==='draft' && new Date(c.createdAt).getTime() < cutoff));
     setCards(pruned);
   }
-  function cardsForUser(u){
-    return allCards().filter(c=>c.user===u.name).sort((a,b)=>new Date(b.updatedAt)-new Date(a.updatedAt));
+  function filteredCards(days){
+    const u = active(); if(!u) return [];
+    const cutoff = Date.now() - days*24*3600*1000;
+    return allCards()
+      .filter(c => c.user===u.username && new Date(c.updatedAt).getTime() >= cutoff)
+      .sort((a,b)=>new Date(b.updatedAt)-new Date(a.updatedAt));
   }
   function showDash(){
-    const u = activeUser();
-    if(!u){ $('#lock').style.display=''; $('#dash').style.display='none'; $('#form').style.display='none'; return; }
-
+    const u=active();
+    if(!u){ resetToLogin(); return; }
     purgeOldDrafts();
-    $('#who').textContent = u.name;
+    $('#who').textContent = `${u.name} (${u.username})`;
     $('#lock').style.display='none';
     $('#form').style.display='none';
     $('#dash').style.display='';
-
-    // render cards
-    const list = cardsForUser(u);
+    renderList();
+  }
+  function renderList(){
+    const days = parseInt($('#rangeSel').value,10);
+    const list = filteredCards(days);
     const box = $('#cards'); box.innerHTML='';
-    if(list.length===0){ box.innerHTML='<p class="hint">Ingen kort endnu. Tryk “Nyt kort”.</p>'; }
+    if(list.length===0){ box.innerHTML='<p class="hint">Ingen arbejdskort i valgt periode.</p>'; return; }
     list.forEach(c=>{
-      const div=document.createElement('div');
-      div.className='card';
       const f=c.fields||{};
-      div.innerHTML = `
+      const row=document.createElement('div');
+      row.className='card';
+      row.innerHTML=`
         <div class="bar-between">
-          <div><strong>${f.customer||'(uden kunde)'}</strong> · ${f.date||''} · <span class="${c.status==='sent'?'':'hint'}">${c.status==='sent'?'Sendt':'Udkast'}</span></div>
+          <div><strong>${f.date||''}</strong> · ${f.customer||'(uden kunde)'} · <span class="${c.status==='sent'?'':'hint'}">${c.status==='sent'?'Sendt':'Udkast'}</span></div>
           <div class="actions-inline">
             <button data-id="${c.id}" class="open">Åbn</button>
             <button data-id="${c.id}" class="del danger">Slet</button>
           </div>
         </div>`;
-      box.appendChild(div);
+      box.appendChild(row);
     });
     box.querySelectorAll('.open').forEach(b=>b.onclick=e=>openCard(e.target.dataset.id));
     box.querySelectorAll('.del').forEach(b=>b.onclick=e=>{
-      const id=e.target.dataset.id;
-      if(confirm('Slet dette kort?')){ setCards(allCards().filter(c=>c.id!==id)); showDash(); }
+      const id=e.target.dataset.id; if(confirm('Slet dette kort?')){ setCards(allCards().filter(x=>x.id!==id)); renderList(); }
     });
   }
+  $('#rangeSel').onchange = renderList;
 
-  $('#newCard').onclick = () => {
-    currentId = uid();
-    loadForm({date: today(), name: activeUser().name}, true);
-  };
-  $('#logout').onclick = () => { localStorage.removeItem(LS_ACTIVE); location.reload(); };
+  $('#logout').onclick = () => { localStorage.removeItem(LS_ACTIVE); resetToLogin(); };
 
-  // FORM
-  let currentId = null;
-  function openCard(id){
-    const c = allCards().find(x=>x.id===id);
-    currentId = id;
-    loadForm(c?.fields || {}, false, c?.status==='sent');
+  // ---- FORM ----
+  let currentId=null;
+  function clearForm(){
+    $('#date').value=today();
+    $('#name').value=active()?.name||'';
+    $('#customer').value=''; $('#location').value=''; $('#machine').value=''; $('#machineNo').value='';
+    $('#mhours').value=0; $('#km').value=0; $('#welding').value=0; $('#electrodes').value=0; $('#diesel').value=0;
+    $('#hours').value=0; $('#overtime').value=0;
+    $('#work').value=''; $('#fault').value=''; $('#done').value=''; $('#note').value='';
+    $('#preview').innerHTML='';
   }
-  function loadForm(fields, isNew=false, readOnly=false){
-    $('#dash').style.display='none';
-    $('#form').style.display='';
-    $('#cardIdShort').textContent = (isNew?'NYT':currentId.slice(0,6).toUpperCase());
-    // fill
-    $('#date').value = fields.date || today();
-    $('#name').value = fields.name || activeUser().name;
-    $('#customer').value = fields.customer || '';
-    $('#location').value = fields.location || '';
-    $('#machine').value = fields.machine || '';
-    $('#work').value = fields.work || '';
-    $('#fault').value = fields.fault || '';
-    $('#done').value = fields.done || '';
-    $('#hours').value = fields.hours ?? 0;
-    $('#mhours').value = fields.mhours ?? 0;
-    $('#km').value = fields.km ?? 0;
-    $('#note').value = fields.note || '';
+  $('#newCard').onclick = ()=>{ currentId=uid(); $('#cardIdShort').textContent='NYT'; clearForm(); $('#dash').style.display='none'; $('#form').style.display=''; };
+  $('#backToDash').onclick = ()=>{ upsert('draft'); showDash(); };
+  $('#print').onclick = ()=>window.print();
 
-    // readonly hvis sendt
-    [...document.querySelectorAll('#form input, #form textarea')].forEach(el=>el.disabled = readOnly && el.id!=='print' );
+  function openCard(id){
+    const c=allCards().find(x=>x.id===id); if(!c) return;
+    currentId=id; $('#cardIdShort').textContent=id.slice(0,6).toUpperCase();
+    const f=c.fields||{};
+    $('#date').value=f.date||today(); $('#name').value=f.name||active().name;
+    $('#customer').value=f.customer||''; $('#location').value=f.location||''; $('#machine').value=f.machine||'';
+    $('#machineNo').value=f.machineNo||''; $('#mhours').value=f.mhours??0; $('#km').value=f.km??0;
+    $('#welding').value=f.welding??0; $('#electrodes').value=f.electrodes??0; $('#diesel').value=f.diesel??0;
+    $('#hours').value=f.hours??0; $('#overtime').value=f.overtime??0;
+    $('#work').value=f.work||''; $('#fault').value=f.fault||''; $('#done').value=f.done||''; $('#note').value=f.note||'';
+    $('#dash').style.display='none'; $('#form').style.display='';
   }
 
   function gather(){
     return {
-      date: $('#date').value,
-      name: $('#name').value.trim(),
-      customer: $('#customer').value.trim(),
-      location: $('#location').value.trim(),
-      machine: $('#machine').value.trim(),
-      work: $('#work').value.trim(),
-      fault: $('#fault').value.trim(),
-      done: $('#done').value.trim(),
-      hours: $('#hours').value || '0',
-      mhours: $('#mhours').value || '0',
-      km: $('#km').value || '0',
-      note: $('#note').value.trim()
+      date: $('#date').value, name: $('#name').value.trim(),
+      customer: $('#customer').value.trim(), location: $('#location').value.trim(),
+      machine: $('#machine').value.trim(), machineNo: $('#machineNo').value.trim(),
+      mhours: $('#mhours').value||'0', km: $('#km').value||'0',
+      welding: $('#welding').value||'0', electrodes: $('#electrodes').value||'0', diesel: $('#diesel').value||'0',
+      hours: $('#hours').value||'0', overtime: $('#overtime').value||'0',
+      work: $('#work').value.trim(), fault: $('#fault').value.trim(),
+      done: $('#done').value.trim(), note: $('#note').value.trim()
     };
   }
 
-  function upsertCard(status='draft'){
-    const u = activeUser(); if(!u) return;
-    const all = allCards();
-    const now = new Date().toISOString();
-    const fields = gather();
-
-    const idx = all.findIndex(c=>c.id===currentId);
-    const payload = { id: currentId || uid(), user: u.name, createdAt: idx>=0?all[idx].createdAt: now, updatedAt: now, status, fields };
-    if(idx>=0) all[idx]=payload; else all.push(payload);
-    setCards(all);
+  function upsert(status='draft'){
+    const u=active(); if(!u) return;
+    const arr=allCards(); const now=new Date().toISOString(); const fields=gather();
+    const i=arr.findIndex(c=>c.id===currentId);
+    const payload={ id: currentId||uid(), user: u.username, createdAt: i>=0?arr[i].createdAt: now, updatedAt: now, status, fields };
+    if(i>=0) arr[i]=payload; else arr.push(payload);
+    setCards(arr);
   }
 
-  $('#save').onclick = () => { upsertCard('draft'); alert('Kort gemt.'); };
-  $('#backToDash').onclick = () => { upsertCard('draft'); showDash(); };
-  $('#print').onclick = () => window.print();
-
-  // validering baseret på admin "requiredFields"
   function requiredOk(){
-    const r = cfg().requiredFields || [];
-    const f = gather();
-    for(const key of r){
-      if(!String(f[key]??'').trim()){ alert('Manglende felt: '+key); return false; }
-    }
+    const r=cfg().requiredFields||[]; const f=gather();
+    for(const k of r){ if(!String(f[k]??'').trim()){ alert('Manglende felt: '+k); return false; } }
     return true;
   }
 
-  // mail
-  function buildMail(fields){
-    const c = cfg();
-    const to = (c.emails || 'vaerksted@bredsgaard.dk').replace(/\s+/g,'');
-    const subj = `${c.subjectPrefix || 'Arbejdskort'} – ${fields.date} – ${fields.name} – ${fields.customer||''}`;
-    const footer = (c.footer || 'Ref.: {dato} – {medarbejder}')
-      .replace('{dato}', fields.date).replace('{medarbejder}', fields.name);
-    const body = `
-Medarbejder: ${fields.name}
-Dato: ${fields.date}
+  function buildMail(f){
+    const c=cfg(); const to=(c.emails||'pb@bredsgaard.dk').replace(/\s+/g,'');
+    const subj=`${c.subjectPrefix||'Arbejdskort'} – ${f.date} – ${f.name} – ${f.customer||''}`;
+    const footer=(c.footer||'Ref.: {dato} – {medarbejder}').replace('{dato}',f.date).replace('{medarbejder}',f.name);
+    const body=`
+Medarbejder: ${f.name}
+Dato: ${f.date}
 
-Kunde: ${fields.customer}
-Lokation: ${fields.location}
-Maskine: ${fields.machine}
+Kunde: ${f.customer}
+Lokation: ${f.location}
+
+Maskine/Model: ${f.machine}
+Maskin nr: ${f.machineNo}
 
 Arbejdet art:
-${fields.work}
+${f.work}
 
 Fejlbeskrivelse:
-${fields.fault}
+${f.fault}
 
 Udført arbejde:
-${fields.done}
+${f.done}
 
-Tider/forbrug:
-- Normal: ${fields.hours} t
-- Maskin: ${fields.mhours} t
-- Kørsel: ${fields.km} km
+Forbrug/tider:
+- Normal: ${f.hours} t
+- Overtimer: ${f.overtime} t
+- Maskintimer: ${f.mhours} t
+- Kørte km: ${f.km} km
+- Svejsning: ${f.welding} t
+- Elektroder: ${f.electrodes} stk
+- Diesel: ${f.diesel} L
 
-Noter:
-${fields.note}
+Bemærkninger:
+${f.note}
 
 ${footer}`.trim();
     return `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
   }
 
-  $('#form').addEventListener('submit', e => {
+  $('#save').onclick = ()=>{ upsert('draft'); alert('Gemte som udkast.'); };
+  $('#form').addEventListener('submit', e=>{
     e.preventDefault();
-    // standard HTML5 krav
-    if (!$('#form').reportValidity()) return;
-    // admin-krav
-    if (!requiredOk()) return;
-
-    // gem og markér sendt
-    upsertCard('sent');
-
-    // åbn e-mail
-    const url = buildMail(gather());
-    window.location.href = url;
-
-    // efter lidt tid → tilbage til oversigt
-    setTimeout(()=>{ showDash(); }, 300);
+    if(!requiredOk()) return;
+    upsert('sent');
+    const url=buildMail(gather());
+    window.location.href=url;
+    setTimeout(()=>{ showDash(); },300);
   });
 
-  // billeder preview (kun visuelt)
-  $('#images').addEventListener('change', () => {
-    const box=$('#preview'); box.innerHTML=''; [...$('#images').files].slice(0,5).forEach(f=>{
-      const img=document.createElement('img'); img.src=URL.createObjectURL(f); img.alt=f.name; box.appendChild(img);
-    });
+  // image preview (valgfrit)
+  $('#images').addEventListener('change', ()=>{
+    const box=$('#preview'); box.innerHTML='';
+    [...$('#images').files].slice(0,5).forEach(f=>{ const img=document.createElement('img'); img.src=URL.createObjectURL(f); box.appendChild(img); });
   });
 
-  // init
-  const u=activeUser(); if(u) showDash();
+  // init: altid start på lock (nulstil “forside”)
+  resetToLogin();
 })();
 </script>
 </body>
 </html>
+
 
 
