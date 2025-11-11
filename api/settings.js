@@ -1,83 +1,74 @@
-import { kv } from '@vercel/kv';
-
-async function getAdmin() {
-  const s = (await kv.get('ak:settings')) || {};
-  return {
-    adminUser: s.adminUser || 'Bonde',
-    adminPin:  s.adminPin  || '0705',
-    settings:  s
-  };
-}
-async function adminOK(req) {
-  const { adminUser, adminPin } = await getAdmin();
-  return (req.headers['x-admin-user'] === adminUser && req.headers['x-admin-pin'] === adminPin);
-}
-
-export default async function handler(req, res) {
-  try {
-    if (req.method === 'GET') {
-      const { settings } = await getAdmin();
-      const { adminPin, ...safe } = settings || {};
-      return res.json(safe || {});
-    }
-
-    if (!(await adminOK(req))) return res.status(401).json({ ok:false, error:'unauthorized' });
-import { requireAdmin, getSettings, saveSettings, sha256 } from "./_util.js";
-
+// Kør på Edge-runtime (krævet af Vercel Edge Functions)
 export const config = { runtime: "edge" };
 
+import { getSettings, saveSettings, requireAdmin, sha256 } from "./_util.js";
+
+function json(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": "no-store",
+    },
+  });
+}
+
 export default async function handler(req) {
-  if (req.method === "GET") {
+  const method = req.method || (req.headers.get(":method") ?? "GET");
+
+  // Hent aktuelle indstillinger
+  if (method === "GET") {
     const s = await getSettings();
-    // vis ikke pin-hash
-    const { adminPinHash, ...pub } = s;
-    return new Response(JSON.stringify(pub), { status: 200, headers: { "content-type": "application/json" } });
+    return json(s);
   }
 
-  if (req.method === "POST") {
+  // Opdater indstillinger (adminkrævet)
+  if (method === "POST") {
     const ok = await requireAdmin(req);
-    if (!ok) return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 });
+    if (!ok) return json({ error: "forbidden" }, 403);
 
-    const body = await req.json();
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      return json({ error: "invalid_json" }, 400);
+    }
+
     const s = await getSettings();
 
-    if (typeof body.adminUser === "string" && body.adminUser.trim()) s.adminUser = body.adminUser.trim();
-    if (typeof body.newAdminPin === "string" && body.newAdminPin.trim().length >= 4) s.adminPinHash = sha256(body.newAdminPin.trim());
+    // Kun felter vi tillader må opdateres
+    const allowed = new Set([
+      "adminUser",
+      "emailTo",
+      "mailSubjectPrefix",
+      "mailFooter",
+      "requiredFields",
+      "keepDays",
+      "workTypes",
+      "consumables",
+    ]);
 
-    if (Array.isArray(body.emailTo)) s.emailTo = body.emailTo.filter(Boolean);
-    if (typeof body.mailSubjectPrefix === "string") s.mailSubjectPrefix = body.mailSubjectPrefix;
-    if (typeof body.mailFooter === "string") s.mailFooter = body.mailFooter;
-    if (Array.isArray(body.requiredFields)) s.requiredFields = body.requiredFields;
-    if (Number.isInteger(body.keepDays)) s.keepDays = Math.max(1, Math.min(31, body.keepDays));
+    for (const [k, v] of Object.entries(body)) {
+      if (k === "newAdminPin") continue; // håndteres seperat
+      if (allowed.has(k)) s[k] = v;
+    }
 
-    if (Array.isArray(body.workTypes)) s.workTypes = body.workTypes.map(x => String(x).trim()).filter(Boolean);
-    if (Array.isArray(body.consumables)) {
-      s.consumables = body.consumables
-        .map(c => ({ name: String(c.name || "").trim(), unit: String(c.unit || "").trim() }))
-        .filter(c => c.name);
+    // Hvis admin vil skifte PIN
+    if (typeof body?.newAdminPin === "string" && body.newAdminPin.length >= 4) {
+      s.adminPinHash = await sha256(body.newAdminPin);
     }
 
     await saveSettings(s);
-    return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { "content-type": "application/json" } });
+    return json({ ok: true });
   }
 
-  return new Response("Method Not Allowed", { status: 405 });
-}
-
-    if (req.method === 'POST') {
-      const incoming = req.body || {};
-      const current  = (await kv.get('ak:settings')) || {};
-      const next = { ...current, ...incoming };
-      // overskriv kun adminPin hvis der er angivet en ny
-      if (!incoming.adminPin) delete next.adminPin;
-      await kv.set('ak:settings', next);
-      return res.json({ ok:true });
-    }
-
-    return res.status(405).end();
-  } catch (e) {
-    return res.status(500).json({ ok:false, error:'server' });
+  // Preflight / andet
+  if (method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
+      headers: { "access-control-allow-methods": "GET,POST,OPTIONS" },
+    });
   }
+
+  return json({ error: "method_not_allowed" }, 405);
 }
-
-
