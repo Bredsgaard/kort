@@ -1,175 +1,83 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="da">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Nyt arbejdskort – Arbejdskort</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arbejdskort</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-
   <header class="topbar">
-    <div class="container bar">
+    <div class="topbar-inner">
       <div class="brand">Arbejdskort</div>
       <nav class="nav">
-        <a class="nav-link active" href="index.html">Nyt arbejdskort</a>
-        <a class="nav-link" href="history.html">Tidligere kort</a>
-        <a class="nav-link" href="admin.html">Admin</a>
+        <a href="index.html">Nyt kort</a>
+        <a href="history.html">Tidligere</a>
+        <a href="admin.html">Admin</a>
+        <span data-userchip class="userchip"></span>
+        <button id="logoutBtn" class="btn" hidden>Log ud</button>
       </nav>
     </div>
   </header>
 
   <main class="container">
-    <section class="card" aria-labelledby="newTitle">
-      <h1 class="card-title" id="newTitle">Nyt arbejdskort</h1>
-      <p class="subtle" style="margin-top:-6px">Felter uden forudfyldte værdier—medarbejderen tager aktivt stilling.</p>
 
-      <form id="job-form" class="form-grid" autocomplete="off">
-        <!-- Bruger & dato -->
-        <div class="field">
-          <label for="jfUser">Brugernavn</label>
-          <input id="jfUser" class="input" type="text" placeholder="Mit brugernavn">
+    <!-- LOGIN BLOK -->
+    <section id="login-block" class="card" hidden>
+      <h1>Log ind</h1>
+      <div class="grid">
+        <div class="col-6">
+          <label>Brugernavn</label>
+          <input id="empUser" placeholder="fx bh">
         </div>
-        <div class="field">
-          <label for="jfDate">Dato</label>
-          <input id="jfDate" class="input" type="date">
+        <div class="col-6">
+          <label>Kode</label>
+          <input id="empPin" type="password" inputmode="numeric" placeholder="4 cifre">
         </div>
-
-        <!-- Maskine & timers -->
-        <div class="field">
-          <label for="jfMachineNo">Maskin nr</label>
-          <input id="jfMachineNo" class="input" type="text" placeholder="Fx serienr./intern nr">
-        </div>
-        <div class="field">
-          <label for="jfMachineHours">Maskintimer</label>
-          <input id="jfMachineHours" class="input" type="number" min="0" step="0.1" placeholder="">
-        </div>
-
-        <!-- Kørte km & forbrug -->
-        <div class="field">
-          <label for="jfKm">Kørte km</label>
-          <input id="jfKm" class="input" type="number" min="0" step="1" placeholder="">
-        </div>
-        <div class="field">
-          <label for="jfDiesel">Diesel (liter)</label>
-          <input id="jfDiesel" class="input" type="number" min="0" step="0.1" placeholder="">
-        </div>
-
-        <!-- Svejsning/elektroder -->
-        <div class="field">
-          <label for="jfWeldHours">Svejsning (timer)</label>
-          <input id="jfWeldHours" class="input" type="number" min="0" step="0.1" placeholder="">
-        </div>
-        <div class="field">
-          <label for="jfElectrodes">Elektroder (stk)</label>
-          <input id="jfElectrodes" class="input" type="number" min="0" step="1" placeholder="">
-        </div>
-
-        <!-- Normal/overtime -->
-        <div class="field">
-          <label for="jfNormal">Normal timer</label>
-          <input id="jfNormal" class="input" type="number" min="0" step="0.1" placeholder="">
-        </div>
-        <div class="field">
-          <label for="jfOver">Overtimer</label>
-          <input id="jfOver" class="input" type="number" min="0" step="0.1" placeholder="">
-        </div>
-
-        <!-- Arbejde art + tekst -->
-        <div class="field">
-          <label for="jfType">Arbejdet art <span class="subtle">(påkrævet for at sende)</span></label>
-          <input id="jfType" class="input" type="text" placeholder="Fx Service, Olieskift, Kædeskift">
-        </div>
-        <div class="field">
-          <label for="jfCustomer">Kunde/modtager</label>
-          <input id="jfCustomer" class="input" type="text" placeholder="Hvem er opgaven udført hos?">
-        </div>
-
-        <div class="field-12">
-          <label for="jfDesc">Fejlbeskrivelse / Udført arbejde</label>
-          <textarea id="jfDesc" class="input" placeholder="Kort beskrivelse af arbejde / fejl"></textarea>
-        </div>
-
-        <!-- Billeder -->
-        <div class="field-12">
-          <label for="jfImages">Billeder (valgfrit)</label>
-          <input id="jfImages" class="input" type="file" accept="image/*" multiple>
-          <div id="imgPreview" class="subtle" style="margin-top:8px"></div>
-        </div>
-
-        <div class="actions">
-          <button type="button" id="btnSaveDraft" class="btn">Gem kladde</button>
-          <button type="submit" id="btnSend" class="btn btn-primary">Gem & send</button>
-          <button type="button" id="btnReset" class="btn btn-ghost">Nulstil</button>
-          <span class="info" id="formInfo" style="display:none;"></span>
-        </div>
-      </form>
+      </div>
+      <button id="loginBtn" class="btn primary" style="margin-top:10px;">Log ind</button>
+      <p id="loginErr" class="error" style="color:#c00;" hidden></p>
     </section>
-  </main>
 
-  <footer class="footer">© Bredsgaard A/S</footer>
+    <!-- ARBEJDSKORT BLOK -->
+    <section id="app-block" class="card" hidden>
+      <h1>Nyt arbejdskort</h1>
+      <form id="workForm" autocomplete="off">
+        <div class="grid">
+          <div class="col-6">
+            <label class="req">Dato</label>
+            <input type="date" id="date" required>
+          </div>
+          <div class="col-6">
+            <label class="req">Maskinnr.</label>
+            <input id="machineNo" placeholder="fx M-123" required>
+          </div>
 
-  <script>
-    const $ = (q)=>document.querySelector(q);
+          <div class="col-4">
+            <label>Maskintimer</label>
+            <input id="machineHours" type="number" placeholder="0">
+          </div>
+          <div class="col-4">
+            <label>Kørte km</label>
+            <input id="drivenKm" type="number" placeholder="0">
+          </div>
+          <div class="col-4">
+            <label>Diesel (L)</label>
+            <input id="diesel" type="number" placeholder="0">
+          </div>
 
-    // Aktiv nav
-    (function markActive(){
-      const here = location.pathname.split('/').pop() || 'index.html';
-      document.querySelectorAll('.nav-link').forEach(a=>{
-        if(a.getAttribute('href')===here){ a.classList.add('active'); }
-      });
-    })();
+          <div class="col-6">
+            <label>Svejsetimer</label>
+            <input id="weldingHours" type="number" placeholder="0">
+          </div>
+          <div class="col-6">
+            <label>Elektroder</label>
+            <input id="electrodes" type="number" placeholder="0">
+          </div>
 
-    // Dags dato
-    (function setToday(){
-      const d = new Date();
-      const pad = n=>String(n).padStart(2,'0');
-      const iso = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-      $('#jfDate').value = iso;
-    })();
+          <div class="col-6">
+            <label class="req">Normaltimer</label>
+            <input id="normalHours" type="number" placeholder="0" required>
+          </div>
 
-    // Billede-preview
-    $('#jfImages').addEventListener('change', ()=>{
-      const wrap = $('#imgPreview'); wrap.innerHTML='';
-      [...$('#jfImages').files].slice(0,6).forEach(file=>{
-        const url = URL.createObjectURL(file);
-        const img = new Image(); img.src = url; img.style.maxHeight='80px'; img.style.marginRight='8px';
-        img.style.borderRadius='8px'; img.style.border='1px solid #e5e7eb';
-        const holder = document.createElement('span'); holder.style.display='inline-block'; holder.style.margin='6px 6px 0 0';
-        holder.appendChild(img); wrap.appendChild(holder);
-      });
-    });
-
-    // Nulstil
-    $('#btnReset').addEventListener('click', ()=>{
-      $('#job-form').reset(); $('#imgPreview').innerHTML=''; $('#formInfo').style.display='none';
-      // Sæt dato igen
-      const d = new Date(); const pad = n=>String(n).padStart(2,'0');
-      $('#jfDate').value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-    });
-
-    // Gem kladde (kun UI-demo – koble til dit /api, hvis ønsket)
-    $('#btnSaveDraft').addEventListener('click', ()=>{
-      $('#formInfo').textContent = 'Kladde gemt lokalt (demo).';
-      $('#formInfo').style.display='inline-flex';
-      // localStorage.setItem('draft', JSON.stringify(...))  // valgfrit
-    });
-
-    // Valider at “Arbejdet art” er udfyldt før send
-    document.getElementById('job-form').addEventListener('submit', async (e)=>{
-      e.preventDefault();
-      const type = $('#jfType').value.trim();
-      if(!type){
-        $('#formInfo').textContent = 'Udfyld “Arbejdet art” for at kunne sende.';
-        $('#formInfo').style.display='inline-flex';
-        $('#jfType').focus();
-        return;
-      }
-      // TODO: Kald din rigtige send/mail-API
-      $('#formInfo').textContent = 'Sendt (demo).';
-      $('#formInfo').style.display='inline-flex';
-    });
-  </script>
-</body>
-</html>
 
