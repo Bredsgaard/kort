@@ -1,4 +1,4 @@
-// api/_util.js – v2 (med demo-session)
+// api/_util.js – v2 (alle felter som default-krav + demo m.m.)
 
 const AK_KEYS = { users:'ak_users', settings:'ak_settings', cards:'ak_cards', session:'ak_session' };
 
@@ -7,7 +7,11 @@ const defaultSettings = {
   emailRecipient:"pb@bredsgaard.dk",
   workTypes:["Service","Olieskift","Kædeskift"],
   consumables:[{name:"Olie",unit:"L"},{name:"Kabler",unit:"stk"},{name:"Kobling",unit:"stk"}],
-  requiredFields:[],
+  // 🚨 Default: ALLE felter påkrævet (admin kan slå fra i "Krav før afsendelse")
+  requiredFields:[
+    "maskinNr","maskintimer","km","svejsningTimer","elektroder",
+    "diesel","normalTimer","overtimer","beskrivelse"
+  ],
   adminUsername:"Bonde"
 };
 
@@ -24,13 +28,12 @@ function getSession(){
   const s=load(AK_KEYS.session,null);
   if(!s) return null;
   const now=Date.now();
-  if(now - s.lastActivity > 15*60*1000){ // 15 minutter
+  if(now - s.lastActivity > 15*60*1000){
     localStorage.removeItem(AK_KEYS.session);
     return null;
   }
   return s;
 }
-
 function touchSession(){
   const s=getSession();
   if(!s) return;
@@ -43,14 +46,13 @@ function ensureDefaults(){
   if(!load(AK_KEYS.settings,null)) save(AK_KEYS.settings, defaultSettings);
   if(!load(AK_KEYS.cards,null)) save(AK_KEYS.cards, []);
   if(!load(AK_KEYS.users,null)){
-    // Seed en testbruger (kan slettes i admin). Ikke nødvendig for demo, men fint at have.
     sha256("1234").then(h=>{
       save(AK_KEYS.users,[{id:crypto.randomUUID(),name:"Test Bruger",username:"test",pinHash:h,active:true}]);
     });
   }
 }
 
-// 👉 DEMO-session uden login (bruges af index.html's "Prøv demo" knap)
+// Demo-session (bruges hvis du har en "Prøv demo" knap)
 function startDemoSession(){
   const sess = {
     userId: 'demo-user',
@@ -61,8 +63,6 @@ function startDemoSession(){
     demo: true
   };
   save(AK_KEYS.session, sess);
-
-  // Sikr defaults, og giv en lille velkomst-kort hvis man vil have noget at se i historik
   ensureDefaults();
   const cards = load(AK_KEYS.cards, []);
   const hasDemo = cards.some(c => c.userId === 'demo-user');
@@ -100,15 +100,14 @@ function yyyymmdd(d){
   const z=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`;
 }
-
 function isWithinLastMonth(s){
   const d=new Date(s);
   const n=new Date();
   const f=new Date(n.getFullYear(), n.getMonth()-1, n.getDate());
   return d>=f && d<=n;
 }
-
 function setHeaderTitle(e){
   const s=load(AK_KEYS.settings, defaultSettings);
   e.textContent = s.appTitle || defaultSettings.appTitle;
 }
+
