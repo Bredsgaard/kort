@@ -1,137 +1,115 @@
 <!doctype html>
 <html lang="da">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Admin · Arbejdskort – Bredsgaard</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Arbejdskort – Bredsgaard</title>
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <header class="container">
     <div class="card">
-      <h1>Admin · Arbejdskort</h1>
-      <p class="note">Lokal demo-admin. Alt gemmes i din browser (LocalStorage).</p>
-      <a class="btn ghost" href="index.html">⟵ Til forsiden</a>
+      <h1>Arbejdskort</h1>
+      <p class="note">Alt i én side – udfyld, gem og se historik. Ingen login eller database.</p>
     </div>
   </header>
 
   <main class="container">
+    <!-- Nyt arbejdskort -->
     <section class="card">
-      <h2>App-indstillinger</h2>
-      <form id="settingsForm">
+      <h2>Nyt arbejdskort</h2>
+      <form id="arbejdskortForm">
         <div class="row">
           <div>
-            <label for="company">Firmanavn</label>
-            <input id="company" type="text" placeholder="Bredsgaard A/S" />
+            <label for="navn">Navn</label>
+            <input id="navn" type="text" required>
           </div>
           <div>
-            <label for="accent">Accentfarve</label>
-            <input id="accent" type="color" value="#1f7a4f" />
+            <label for="dato">Dato</label>
+            <input id="dato" type="date" required>
           </div>
         </div>
-        <div class="row">
-          <div>
-            <label for="defaultEmail">Standard-email</label>
-            <input id="defaultEmail" type="email" placeholder="info@bredsgaard.dk" />
-          </div>
-          <div>
-            <label for="footerText">Footer-tekst</label>
-            <input id="footerText" type="text" placeholder="© Bredsgaard A/S" />
-          </div>
-        </div>
-        <div style="margin-top:12px">
-          <button class="btn" type="submit">Gem indstillinger</button>
-          <button class="btn ghost" type="button" id="resetTheme">Nulstil farver</button>
+        <label for="opgave">Opgave</label>
+        <textarea id="opgave" placeholder="Beskriv opgaven..."></textarea>
+
+        <div class="toolbar" style="margin-top:12px">
+          <button type="submit" class="btn">Gem arbejdskort</button>
+          <button type="button" id="sendEmail" class="btn ghost">Send som email</button>
+          <button type="button" id="clearForm" class="btn ghost">Nulstil</button>
         </div>
       </form>
     </section>
 
+    <!-- Historik -->
     <section class="card">
-      <h2>Data & vedligehold</h2>
-      <div class="toolbar">
-        <button class="btn" id="exportBtn">Eksportér som JSON</button>
-        <label class="pill" for="importFile">📥 Importér JSON
-          <input id="importFile" type="file" accept="application/json" style="display:none" />
-        </label>
-        <button class="btn ghost" id="clearHistoryBtn">Slet historik</button>
-        <button class="btn ghost" id="factoryResetBtn">Fabriksnulstil</button>
-      </div>
-    </section>
-
-    <section class="card">
-      <h2>Status</h2>
-      <p class="note">Elementer i historik: <strong id="historyCount">0</strong></p>
-      <p class="note">Sidst gemt: <strong id="lastSaved">–</strong></p>
+      <h2>Tidligere arbejdskort</h2>
+      <table class="table" id="historyTable">
+        <thead>
+          <tr><th>Dato</th><th>Navn</th><th>Opgave</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
     </section>
   </main>
 
   <footer class="container footer">
     <div class="card">
-      <span id="footerLegal">© Bredsgaard A/S</span>
-      <span class="note">Lokal demo – ingen server / database</span>
+      <a href="admin.html" class="btn ghost">Admin</a>
+      <span>© Bredsgaard A/S</span>
     </div>
   </footer>
 
   <div id="toast" class="toast">Gemt</div>
 
   <script>
-    const KEYS = { settings:'arbejdskort_settings', history:'arbejdskort_history' };
+    const KEY = "arbejdskort_history";
     const $ = (s, r=document) => r.querySelector(s);
-    const toast = (msg='Gemt') => { const t=$('#toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1500); };
+    const toast = (m="Gemt") => { const t=$("#toast"); t.textContent=m; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),1500); };
 
-    const load = (k) => JSON.parse(localStorage.getItem(k)||'{}');
-    const save = (k,v) => localStorage.setItem(k, JSON.stringify(v));
+    const loadHistory = () => JSON.parse(localStorage.getItem(KEY)||"[]");
+    const saveHistory = (data) => localStorage.setItem(KEY, JSON.stringify(data));
 
-    document.addEventListener('DOMContentLoaded',()=>{
-      const s = load(KEYS.settings);
-      $('#company').value = s.company || 'Bredsgaard A/S';
-      $('#accent').value = s.accent || '#1f7a4f';
-      $('#defaultEmail').value = s.defaultEmail || 'info@bredsgaard.dk';
-      $('#footerText').value = s.footerText || '© Bredsgaard A/S';
+    function renderHistory(){
+      const list = loadHistory();
+      const tbody = $("#historyTable tbody");
+      tbody.innerHTML = "";
+      list.forEach(item=>{
+        const tr=document.createElement("tr");
+        tr.innerHTML=`<td>${item.dato}</td><td>${item.navn}</td><td>${item.opgave}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
 
-      $('#settingsForm').addEventListener('submit',e=>{
+    document.addEventListener("DOMContentLoaded",()=>{
+      renderHistory();
+
+      $("#arbejdskortForm").addEventListener("submit", e=>{
         e.preventDefault();
-        save(KEYS.settings,{
-          company:$('#company').value,
-          accent:$('#accent').value,
-          defaultEmail:$('#defaultEmail').value,
-          footerText:$('#footerText').value,
-          _updatedAt:new Date().toISOString()
-        });
-        document.documentElement.style.setProperty('--accent',$('#accent').value);
-        toast('Indstillinger gemt');
+        const navn=$("#navn").value.trim();
+        const dato=$("#dato").value;
+        const opgave=$("#opgave").value.trim();
+        if(!navn||!dato)return alert("Udfyld navn og dato");
+
+        const list = loadHistory();
+        list.unshift({navn,dato,opgave});
+        saveHistory(list);
+        renderHistory();
+        toast("Arbejdskort gemt");
+        e.target.reset();
       });
 
-      $('#resetTheme').onclick=()=>{
-        document.documentElement.style.setProperty('--accent','#1f7a4f');
-        toast('Farver nulstillet');
+      $("#clearForm").onclick=()=>$("#arbejdskortForm").reset();
+
+      $("#sendEmail").onclick=()=>{
+        const subject="Nyt arbejdskort";
+        const body=`Navn: ${$("#navn").value}%0ADato: ${$("#dato").value}%0AOpgave:%0A${$("#opgave").value}`;
+        window.location.href=`mailto:?subject=${subject}&body=${body}`;
       };
-
-      $('#exportBtn').onclick=()=>{
-        const data={settings:load(KEYS.settings),history:JSON.parse(localStorage.getItem(KEYS.history)||'[]')};
-        const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-        const a=document.createElement('a');
-        a.href=URL.createObjectURL(blob);
-        a.download='arbejdskort_backup.json';
-        a.click();
-      };
-
-      $('#importFile').onchange=async(e)=>{
-        const f=e.target.files[0]; if(!f)return;
-        const text=await f.text();
-        try{const j=JSON.parse(text); if(j.settings)save(KEYS.settings,j.settings); if(j.history)localStorage.setItem(KEYS.history,JSON.stringify(j.history)); toast('Importeret'); location.reload();}catch{alert('Fejl ved import.');}
-      };
-
-      $('#clearHistoryBtn').onclick=()=>{if(confirm('Slet historik?')){localStorage.setItem(KEYS.history,'[]');toast('Historik slettet');}};
-      $('#factoryResetBtn').onclick=()=>{if(confirm('Nulstil alt?')){localStorage.clear();location.reload();}};
-
-      const h=JSON.parse(localStorage.getItem(KEYS.history)||'[]');
-      $('#historyCount').textContent=h.length;
-      $('#lastSaved').textContent=s._updatedAt ? new Date(s._updatedAt).toLocaleString() : '–';
     });
   </script>
 </body>
 </html>
+
 
 
 
