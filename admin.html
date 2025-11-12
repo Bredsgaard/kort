@@ -1,113 +1,80 @@
 <!doctype html>
 <html lang="da">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Demo Admin – Arbejdskort</title>
-  <link rel="stylesheet" href="./css/style.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin · Arbejdskort – Bredsgaard</title>
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <header class="header header--brand">
-    <h1>Bredsgaard – Demo Admin</h1>
-    <nav class="nav">
-      <a class="button ghost" href="./index.html">Til forsiden</a>
-    </nav>
+  <header class="container">
+    <div class="card">
+      <h1>Admin · Arbejdskort</h1>
+      <p class="note">Alt gemmes lokalt i din browser (LocalStorage).</p>
+      <a class="btn ghost" href="index.html">⟵ Til forsiden</a>
+    </div>
   </header>
 
   <main class="container">
     <section class="card">
-      <h2>Indstillinger</h2>
-
-      <div class="grid">
-        <div class="field full">
-          <label>Standard modtager-email</label>
-          <input id="email" class="input" type="email" placeholder="fx pb@bredsgaard.dk">
-        </div>
-
-        <div class="field full">
-          <label>Arbejdstyper (én pr. linje)</label>
-          <textarea id="worktypes" class="input" rows="4" placeholder="Service&#10;Olieskift&#10;Kædeskift"></textarea>
-        </div>
-
-        <div class="field full">
-          <label>Krav før afsendelse</label>
-          <div id="reqList" class="grid"></div>
-          <small class="hint">“Arbejdet art” er altid påkrævet.</small>
-        </div>
-
-        <div class="field full">
-          <label>Forbrugsliste (navn:enhed – én pr. linje)</label>
-          <textarea id="consumables" class="input" rows="4" placeholder="Olie:L&#10;Kabler:stk&#10;Kobling:stk"></textarea>
-        </div>
+      <h2>Datahåndtering</h2>
+      <div class="toolbar">
+        <button class="btn" id="exportBtn">Eksportér som JSON</button>
+        <label class="pill" for="importFile">📥 Importér JSON
+          <input id="importFile" type="file" accept="application/json" style="display:none">
+        </label>
+        <button class="btn ghost" id="clearBtn">Slet historik</button>
       </div>
+    </section>
 
-      <div class="actions__row" style="margin-top:8px">
-        <button id="save" class="button primary">Gem</button>
-        <button id="export" class="button">Export JSON</button>
-        <button id="import" class="button">Import JSON</button>
-        <input id="file" type="file" accept="application/json" style="display:none">
-      </div>
-      <small class="hint">Alt gemmes kun lokalt i denne browser – demo uden database.</small>
+    <section class="card">
+      <h2>Info</h2>
+      <p class="note">Antal arbejdskort: <strong id="count">0</strong></p>
     </section>
   </main>
 
-  <footer class="footer">
-    © Bredsgaard A/S
+  <footer class="container footer">
+    <div class="card">
+      <span>© Bredsgaard A/S</span>
+      <span class="note">Demo uden database</span>
+    </div>
   </footer>
 
-<script>
-const K_SETTINGS='ak_demo_settings';
-const DEFAULTS={ emailRecipient:'pb@bredsgaard.dk', workTypes:['Service','Olieskift','Kædeskift'], requiredFields:['maskinNr','maskintimer','km','svejsningTimer','elektroder','diesel','normalTimer','overtimer','beskrivelse'], consumables:[{name:'Olie',unit:'L'},{name:'Kabler',unit:'stk'},{name:'Kobling',unit:'stk'}] };
+  <div id="toast" class="toast">Gemt</div>
 
-function load(k,f){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):structuredClone(f); }catch(e){ return structuredClone(f); } }
-function save(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
-function ensure(){ if(!localStorage.getItem(K_SETTINGS)) save(K_SETTINGS, DEFAULTS); }
-function get(){ return load(K_SETTINGS, DEFAULTS); }
-function set(v){ save(K_SETTINGS, v); }
+  <script>
+    const KEY = "arbejdskort_history";
+    const $ = (s,r=document)=>r.querySelector(s);
+    const toast = (m="OK")=>{const t=$("#toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1500);};
+    const getHistory=()=>JSON.parse(localStorage.getItem(KEY)||"[]");
+    const saveHistory=(a)=>localStorage.setItem(KEY,JSON.stringify(a));
 
-ensure();
-const form = { email:document.getElementById('email'), worktypes:document.getElementById('worktypes'), reqList:document.getElementById('reqList'), consumables:document.getElementById('consumables') };
-const s = get();
+    document.addEventListener("DOMContentLoaded",()=>{
+      const update=()=>$("#count").textContent=getHistory().length;
+      update();
 
-// udfyld felter
-form.email.value = s.emailRecipient || '';
-form.worktypes.value = (s.workTypes||[]).join('\n');
-form.consumables.value = (s.consumables||[]).map(c=>`${c.name}:${c.unit}`).join('\n');
+      $("#exportBtn").onclick=()=>{
+        const data=getHistory();
+        const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+        const a=document.createElement("a");
+        a.href=URL.createObjectURL(blob);
+        a.download="arbejdskort_backup.json";
+        a.click();
+      };
 
-const fields=[['maskinNr','Maskin nr'],['maskintimer','Maskintimer'],['km','Kørte km'],['svejsningTimer','Svejsning (timer)'],['elektroder','Elektroder (stk)'],['diesel','Diesel (liter)'],['normalTimer','Normal timer'],['overtimer','Overtimer'],['beskrivelse','Fejlbeskrivelse / Udført arbejde']];
-form.reqList.innerHTML = fields.map(([k,l])=>`<div class="field third"><label><input type="checkbox" data-k="${k}" ${s.requiredFields?.includes(k)?'checked':''}> ★ ${l}</label></div>`).join('');
+      $("#importFile").onchange=async(e)=>{
+        const f=e.target.files[0];if(!f)return;
+        const t=await f.text();try{const d=JSON.parse(t);saveHistory(d);toast("Importeret");update();}catch{alert("Fejl i fil.");}
+      };
 
-// gem
-document.getElementById('save').onclick = ()=>{
-  const n = {
-    emailRecipient: form.email.value.trim(),
-    workTypes: form.worktypes.value.split('\n').map(x=>x.trim()).filter(Boolean),
-    requiredFields: Array.from(form.reqList.querySelectorAll('input[type=checkbox]:checked')).map(i=>i.dataset.k),
-    consumables: form.consumables.value.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{ const [name,unit] = l.split(':'); return {name:name?.trim()||'', unit:unit?.trim()||''}; }).filter(x=>x.name && x.unit)
-  };
-  set(n);
-  alert('Indstillinger gemt (lokalt).');
-};
-
-// export/import
-const file = document.getElementById('file');
-document.getElementById('export').onclick = ()=>{
-  const blob = new Blob([JSON.stringify(get(), null, 2)], {type:'application/json'});
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download='arbejdskort-demo-settings.json'; a.click();
-};
-document.getElementById('import').onclick = ()=> file.click();
-file.onchange = async ()=>{
-  const f = file.files[0]; if(!f) return;
-  const text = await f.text();
-  try{
-    const data = JSON.parse(text);
-    if(!data || typeof data !== 'object') throw new Error('Ugyldig JSON');
-    set(data); location.reload();
-  }catch(e){ alert('Kunne ikke importere JSON.'); }
-};
-</script>
+      $("#clearBtn").onclick=()=>{
+        if(confirm("Slet al historik?")){saveHistory([]);toast("Historik slettet");update();}
+      };
+    });
+  </script>
 </body>
 </html>
+
 
 
 
